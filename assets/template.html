@@ -1,66 +1,88 @@
 <title>Padawan No More — The Jedi Trials</title>
 <style>
 :root{
-  --bg:#FAF9F5; --card:#F0EEE6; --well:#E8E6DC; --raise:#FFFFFF;
-  --ink:#141413; --ink2:#5E5D59; --ink3:#91908A;
-  --line:#DEDCD1; --line2:#C9C7BA;
-  --coral:#CC785C; --coral-deep:#A85B3F; --coral-bg:#F5E5DD;
-  --ok:#6C8A4B; --ok-bg:#E9EDDD; --no:#B3402F; --no-bg:#F3E0DC; --warn:#AA7F1F; --warn-bg:#F0E8D2;
-  --c1:#CC785C; --c2:#3D6FB0; --c3:#AA7F1F; --c4:#8F8D86;
-  --add-bg:#E9EDDD; --add-ink:#41552A; --del-bg:#F3E0DC; --del-ink:#84301F;
-  --serif:'Iowan Old Style','Palatino Nova',Palatino,'Book Antiqua',Georgia,serif;
+  --bg:#0A0A12; --card:#12121E; --well:#1B1B2C; --raise:#22223A;
+  --ink:#EDEFF7; --ink2:#A9ADC4; --ink3:#6E7288;
+  --line:#26263A; --line2:#3D3D5C;
+  --coral:#FFE81F; --coral-deep:#FFF29E; --coral-bg:#2C2807;
+  --ok:#43D465; --ok-bg:#0E2A16; --no:#FF5C5C; --no-bg:#331114; --warn:#FFB13D; --warn-bg:#33240F;
+  --c1:#4BD5EE; --c2:#B18CFF; --c3:#FFE81F; --c4:#6E7288;
+  --add-bg:#0E2A16; --add-ink:#8CE8A0; --del-bg:#331114; --del-ink:#FFA3A3;
+  --serif:'Avenir Next Condensed','Arial Narrow Bold','Arial Narrow','Helvetica Neue',Impact,sans-serif;
   --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
-  --shadow:0 1px 2px rgba(20,20,19,.05),0 4px 16px rgba(20,20,19,.05);
+  --shadow:0 0 0 1px rgba(75,213,238,.06),0 4px 24px rgba(0,0,0,.5);
 }
 @media (prefers-color-scheme: dark){:root{
-  --bg:#141413; --card:#1F1E1B; --well:#262521; --raise:#2B2A25;
-  --ink:#F5F4EF; --ink2:#B8B6AC; --ink3:#7C7A70;
-  --line:#33322C; --line2:#4A4840;
-  --coral:#D97757; --coral-deep:#E8987E; --coral-bg:#3A2A22;
-  --ok:#8FAC6C; --ok-bg:#28301F; --no:#D66A5D; --no-bg:#3A2622; --warn:#C99A3D; --warn-bg:#332B18;
-  --c1:#D06A47; --c2:#5E8FC9; --c3:#B58A2A; --c4:#7A786F;
-  --add-bg:#28301F; --add-ink:#B4CC93; --del-bg:#3A2622; --del-ink:#EBA396;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+  --bg:#0A0A12; --card:#12121E; --well:#1B1B2C; --raise:#22223A;
+  --ink:#EDEFF7; --ink2:#A9ADC4; --ink3:#6E7288;
+  --line:#26263A; --line2:#3D3D5C;
+  --coral:#FFE81F; --coral-deep:#FFF29E; --coral-bg:#2C2807;
+  --ok:#43D465; --ok-bg:#0E2A16; --no:#FF5C5C; --no-bg:#331114; --warn:#FFB13D; --warn-bg:#33240F;
+  --c1:#4BD5EE; --c2:#B18CFF; --c3:#FFE81F; --c4:#6E7288;
+  --add-bg:#0E2A16; --add-ink:#8CE8A0; --del-bg:#331114; --del-ink:#FFA3A3;
+  --serif:'Avenir Next Condensed','Arial Narrow Bold','Arial Narrow','Helvetica Neue',Impact,sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
+  --shadow:0 0 0 1px rgba(75,213,238,.06),0 4px 24px rgba(0,0,0,.5);
 }}
 :root[data-theme="light"]{
-  --bg:#FAF9F5; --card:#F0EEE6; --well:#E8E6DC; --raise:#FFFFFF;
-  --ink:#141413; --ink2:#5E5D59; --ink3:#91908A;
-  --line:#DEDCD1; --line2:#C9C7BA;
-  --coral:#CC785C; --coral-deep:#A85B3F; --coral-bg:#F5E5DD;
-  --ok:#6C8A4B; --ok-bg:#E9EDDD; --no:#B3402F; --no-bg:#F3E0DC; --warn:#AA7F1F; --warn-bg:#F0E8D2;
-  --c1:#CC785C; --c2:#3D6FB0; --c3:#AA7F1F; --c4:#8F8D86;
-  --add-bg:#E9EDDD; --add-ink:#41552A; --del-bg:#F3E0DC; --del-ink:#84301F;
-  --shadow:0 1px 2px rgba(20,20,19,.05),0 4px 16px rgba(20,20,19,.05);
+  --bg:#0A0A12; --card:#12121E; --well:#1B1B2C; --raise:#22223A;
+  --ink:#EDEFF7; --ink2:#A9ADC4; --ink3:#6E7288;
+  --line:#26263A; --line2:#3D3D5C;
+  --coral:#FFE81F; --coral-deep:#FFF29E; --coral-bg:#2C2807;
+  --ok:#43D465; --ok-bg:#0E2A16; --no:#FF5C5C; --no-bg:#331114; --warn:#FFB13D; --warn-bg:#33240F;
+  --c1:#4BD5EE; --c2:#B18CFF; --c3:#FFE81F; --c4:#6E7288;
+  --add-bg:#0E2A16; --add-ink:#8CE8A0; --del-bg:#331114; --del-ink:#FFA3A3;
+  --serif:'Avenir Next Condensed','Arial Narrow Bold','Arial Narrow','Helvetica Neue',Impact,sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
+  --shadow:0 0 0 1px rgba(75,213,238,.06),0 4px 24px rgba(0,0,0,.5);
 }
 :root[data-theme="dark"]{
-  --bg:#141413; --card:#1F1E1B; --well:#262521; --raise:#2B2A25;
-  --ink:#F5F4EF; --ink2:#B8B6AC; --ink3:#7C7A70;
-  --line:#33322C; --line2:#4A4840;
-  --coral:#D97757; --coral-deep:#E8987E; --coral-bg:#3A2A22;
-  --ok:#8FAC6C; --ok-bg:#28301F; --no:#D66A5D; --no-bg:#3A2622; --warn:#C99A3D; --warn-bg:#332B18;
-  --c1:#D06A47; --c2:#5E8FC9; --c3:#B58A2A; --c4:#7A786F;
-  --add-bg:#28301F; --add-ink:#B4CC93; --del-bg:#3A2622; --del-ink:#EBA396;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+  --bg:#0A0A12; --card:#12121E; --well:#1B1B2C; --raise:#22223A;
+  --ink:#EDEFF7; --ink2:#A9ADC4; --ink3:#6E7288;
+  --line:#26263A; --line2:#3D3D5C;
+  --coral:#FFE81F; --coral-deep:#FFF29E; --coral-bg:#2C2807;
+  --ok:#43D465; --ok-bg:#0E2A16; --no:#FF5C5C; --no-bg:#331114; --warn:#FFB13D; --warn-bg:#33240F;
+  --c1:#4BD5EE; --c2:#B18CFF; --c3:#FFE81F; --c4:#6E7288;
+  --add-bg:#0E2A16; --add-ink:#8CE8A0; --del-bg:#331114; --del-ink:#FFA3A3;
+  --serif:'Avenir Next Condensed','Arial Narrow Bold','Arial Narrow','Helvetica Neue',Impact,sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
+  --shadow:0 0 0 1px rgba(75,213,238,.06),0 4px 24px rgba(0,0,0,.5);
 }
 *{box-sizing:border-box}
+html{background:#0A0A12}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.65) 50%, transparent 51%),
+    radial-gradient(1px 1px at 78% 8%, rgba(255,255,255,.4) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 55% 32%, rgba(255,255,255,.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 33% 62%, rgba(255,255,255,.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 90% 48%, rgba(255,255,255,.45) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 8% 84%, rgba(255,255,255,.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 64% 78%, rgba(255,255,255,.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 42% 94%, rgba(255,255,255,.3) 50%, transparent 51%);
+  background-size:900px 700px}
+.wrap{position:relative;z-index:1}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);margin:0;font-size:15.5px;
   line-height:1.6;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1020px;margin:0 auto;padding:52px 28px 150px}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--coral)}
-h1{font-family:var(--serif);font-weight:600;font-size:clamp(30px,4.6vw,46px);letter-spacing:-.015em;
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--c1)}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5vw,52px);letter-spacing:.015em;text-transform:uppercase;color:var(--coral);text-shadow:0 0 24px rgba(255,232,31,.25);
   line-height:1.12;margin:10px 0 0;text-wrap:balance}
-h1 em{font-style:italic;color:var(--coral)}
+h1 em{font-style:normal;color:var(--c1);text-shadow:0 0 20px rgba(75,213,238,.45)}
 .sub{color:var(--ink2);max-width:62ch;margin:14px 0 0;font-size:16px}
-h2{font-family:var(--serif);font-weight:600;font-size:24px;letter-spacing:-.01em;margin:64px 0 6px;text-wrap:balance}
+h2{font-family:var(--serif);font-weight:700;font-size:24px;letter-spacing:.06em;text-transform:uppercase;color:var(--coral);margin:64px 0 6px;text-wrap:balance}
 .h2note{color:var(--ink2);font-size:14px;margin:0 0 18px;max-width:70ch}
 .num{font-variant-numeric:tabular-nums}
 /* ---- hero wait band ---- */
 .heroband{display:grid;grid-template-columns:auto 1fr;gap:34px;align-items:center;margin:36px 0 0;
   background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 30px;box-shadow:var(--shadow)}
 @media(max-width:720px){.heroband{grid-template-columns:1fr}}
-.bigwait .v{font-family:var(--serif);font-size:clamp(40px,6vw,58px);font-weight:600;line-height:1;
-  color:var(--coral);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bigwait .v{font-family:var(--serif);font-size:clamp(40px,6vw,58px);font-weight:700;line-height:1;
+  color:var(--coral);text-shadow:0 0 28px rgba(255,232,31,.3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .bigwait .l{font-size:13.5px;color:var(--ink2);margin-top:6px;max-width:24ch}
 .minitiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:0}
 .mt{padding:2px 18px;border-left:1px solid var(--line)}
@@ -69,12 +91,13 @@ h2{font-family:var(--serif);font-weight:600;font-size:24px;letter-spacing:-.01em
 .mt .l{font-size:12px;color:var(--ink2);line-height:1.35;margin-top:2px}
 /* ---- chart panels ---- */
 .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:var(--shadow)}
-.panel h3{font-family:var(--serif);font-size:18px;font-weight:600;margin:0 0 2px}
+.panel h3{font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px}
 .panel .note{font-size:13px;color:var(--ink2);margin:0 0 16px;max-width:72ch}
 .hero-split{display:flex;height:38px;border-radius:8px;overflow:hidden;gap:2px;margin:4px 0 6px}
 .hero-split div{display:flex;align-items:center;justify-content:center;font-family:var(--mono);
-  font-size:12px;font-weight:700;color:#FAF9F5;white-space:nowrap;overflow:hidden}
+  font-size:12px;font-weight:700;color:#0A0A12;white-space:nowrap;overflow:hidden}
 .hero-split .un{color:var(--ink)}
+.hero-split .other{color:#0A0A12}
 .legend{display:flex;flex-wrap:wrap;gap:16px;margin:10px 0 2px;font-size:12.5px;color:var(--ink2)}
 .legend .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .srow,.brow{display:grid;gap:12px;align-items:center;padding:5px 0}
@@ -102,7 +125,7 @@ h2{font-family:var(--serif);font-weight:600;font-size:24px;letter-spacing:-.01em
 .card.decided-reject{border-color:var(--line2);opacity:.86}
 .card.decided-reject::before{background:var(--ink3)}
 .chead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:20px 24px 0 26px}
-.chead h3{font-family:var(--serif);font-size:20px;font-weight:600;margin:0;letter-spacing:-.01em}
+.chead h3{font-family:var(--serif);font-size:21px;font-weight:700;margin:0;letter-spacing:.04em;text-transform:uppercase}
 .count{font-family:var(--mono);font-size:11.5px;background:var(--well);border-radius:99px;
   padding:3px 11px;color:var(--ink2);font-variant-numeric:tabular-nums}
 .waitchip{font-family:var(--mono);font-size:11.5px;border-radius:99px;padding:3px 11px;
@@ -161,7 +184,7 @@ button:active{transform:scale(.96)}
 .approve-btn .tick{stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round;
   stroke-dasharray:20;stroke-dashoffset:20}
 .approve-btn:hover{background:var(--ok-bg)}
-.approve-btn.on{background:var(--ok);color:#FAF9F5;border-color:var(--ok)}
+.approve-btn.on{background:var(--ok);color:#0A0A12;border-color:var(--ok)}
 .approve-btn.on .tick{stroke-dashoffset:0;transition:stroke-dashoffset .4s ease .05s}
 .reject-btn{color:var(--ink2)}
 .reject-btn:hover{border-color:var(--no);color:var(--no);background:var(--no-bg)}
@@ -192,11 +215,11 @@ summary:hover{text-decoration:underline}
   padding:12px 28px;display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap;z-index:9}
 .ring{width:34px;height:34px;transform:rotate(-90deg)}
 .ring .bgc{fill:none;stroke:var(--well);stroke-width:4}
-.ring .fgc{fill:none;stroke:var(--ok);stroke-width:4;stroke-linecap:round;
+.ring .fgc{fill:none;stroke:var(--coral);stroke-width:4;stroke-linecap:round;
   transition:stroke-dashoffset .5s cubic-bezier(.2,.8,.2,1)}
 .dbar .ds{font-family:var(--mono);font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
-.dbar .copy{background:var(--coral);border-color:var(--coral);color:#FAF9F5;font-weight:700;padding:10px 24px}
-.dbar .copy:hover{background:var(--coral-deep);border-color:var(--coral-deep)}
+.dbar .copy{background:var(--coral);border-color:var(--coral);color:#0A0A12;font-weight:800;padding:10px 24px}
+.dbar .copy:hover{background:var(--coral-deep);border-color:var(--coral-deep);color:#0A0A12}
 .dbar .hint{font-size:12px;color:var(--ink3);width:100%;text-align:center;margin-top:2px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -204,25 +227,25 @@ summary:hover{text-decoration:underline}
 <div class="wrap">
 <div class="eyebrow">Padawan no more · the jedi trials · <span id="range"></span></div>
 <h1>Your padawan stopped to ask for guidance <em id="hcount"></em> times this week.</h1>
-<p class="sub">Claude-Wan is ready for the Trials. Every stop is traced to the config or skill that caused it, with a ready-to-apply fix.
+<p class="sub">Claude-Wan Kenobi is ready for the Trials — the record below is why. Every stop is traced to the config or skill gate that caused it, with a ready-to-apply fix.
 Choose a fix variant where there's more than one, stamp it <b>Approve</b> or <b>Reject</b>, then copy
 your decisions from the bar below back into Claude Code.</p>
 
 <div class="heroband">
   <div class="bigwait"><div class="v" id="bigwait"></div>
-    <div class="l">spent blocked, waiting for a human answer <span id="capnote"></span></div></div>
+    <div class="l">spent standing in your doorway, awaiting the Council’s guidance <span id="capnote"></span></div></div>
   <div class="minitiles" id="tiles"></div>
 </div>
 
 <h2>Which option did you actually pick?</h2>
 <p class="h2note">"First option" is the one Claude recommended. When a gate's answers are nearly all
-first-option, the gate is ceremony — automate it. When they're free-text, it's real signal — keep it, batch it.</p>
+first-option, the gate is ceremony — automate it. When they're free-text, it's real signal — keep it, batch it. Approve or approve not; there is no “ask again later.”</p>
 <div class="panel">
   <h3>All <span class="num" id="qn"></span> option dialogs</h3>
   <p class="note" id="selnote"></p>
   <div class="hero-split" id="hero"></div>
   <div class="legend">
-    <span><span class="sw" style="background:var(--c1)"></span>First option (recommended)</span>
+    <span><span class="sw" style="background:var(--c1)"></span>First option — “Yes. Do that.”</span>
     <span><span class="sw" style="background:var(--c2)"></span>Different option</span>
     <span><span class="sw" style="background:var(--c3)"></span>Free-text “Other”</span>
     <span><span class="sw" style="background:var(--c4)"></span>Unanswered</span>
@@ -230,7 +253,7 @@ first-option, the gate is ceremony — automate it. When they're free-text, it's
   <div id="skillbars" style="margin-top:16px"></div>
 </div>
 
-<h2>Where your time went, by project</h2>
+<h2>Where your time went, across the systems</h2>
 <p class="h2note">Share of sessions that needed at least one intervention, and the waiting time each
 project cost you (walk-aways capped at 30 min).</p>
 <div class="panel">
@@ -243,7 +266,7 @@ project cost you (walk-aways capped at 30 min).</p>
 before stamping.</p>
 <div id="cards"></div>
 
-<h2>Not fixable by config</h2>
+<h2>Not fixable by config — the Force is just like that</h2>
 <div class="card info" id="infocard"></div>
 </div>
 
@@ -256,7 +279,7 @@ before stamping.</p>
   <button class="copy" id="copybtn">Copy decisions for your padawan</button>
   <button id="resetbtn">Reset</button>
   <span class="hint">Buttons record your choices on this page. Paste the copied block back into your
-  Claude Code session and it applies exactly the approved diffs.</span>
+  Claude Code session and it will be done, Master — exactly the approved diffs, nothing more.</span>
 </div>
 
 <script>
@@ -278,8 +301,8 @@ $("#capnote").innerHTML = `— ${fdur(W.total)} raw, incl. ${W.over_cap} walk-aw
 $("#tiles").innerHTML = [
  [T.sessions_hit+" <em>/ "+T.sessions+"</em>","sessions needed you ("+pct(T.sessions_hit,T.sessions)+"%)"],
  [fdur(W.median),"median wait per stop"],
- [pct(O.first||0,answered)+"%","of answers took the recommended option"],
- [T.plans_approved+" <em>/ "+T.plans+"</em>","plans approved unchanged"],
+ [pct(O.first||0,answered)+"%","of answers were “Yes. Do that.”"],
+ [T.plans_approved+" <em>/ "+T.plans+"</em>","plans the Council waved through unchanged"],
 ].map(([v,l])=>`<div class="mt"><div class="v num">${v}</div><div class="l">${l}</div></div>`).join("");
 
 $("#qn").textContent = T.questions;
@@ -307,7 +330,7 @@ function diffHTML(d, id, vkey){
     h.lines.map(([t,s])=>`<div class="dl ${t}">${t==="add"?"+":t==="del"?"−":" "} ${esc(s)}</div>`).join("")).join("");
   return `<div class="diffwrap" data-dw="${id}:${vkey}">
     <div class="diff"><div class="fn"><span>${esc(d.file)}</span></div>${body}</div>
-    <div class="stamp approve">Approved</div><div class="stamp reject">Rejected</div></div>`;
+    <div class="stamp approve">Knighted</div><div class="stamp reject">Denied, it is</div></div>`;
 }
 function logHTML(rows,label){
   if(!rows || !rows.length) return "";
@@ -371,7 +394,7 @@ function paint(){
       w.querySelector(".stamp.reject").classList.toggle("show", mine && s.v==="reject");
     });
     const el=$("#st-"+id);
-    if(el) el.textContent = s.v ? (s.v==="approve"?"Approved — variant "+cv:"Rejected") : "";
+    if(el) el.textContent = s.v ? (s.v==="approve"?"Knighted — variant "+cv:"Denied, it is") : "";
   });
   const done = FIXES.filter(id=>st[id]&&st[id].v).length;
   $("#dcount").textContent = done+" / "+FIXES.length+" decided";
