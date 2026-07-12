@@ -463,11 +463,16 @@ document.addEventListener("click",e=>{
 });
 $("#resetbtn").onclick=()=>{st={};if(!FRESH)localStorage.setItem(KEY,"{}");paint();};
 function decisionsText(){
-  const L=["Padawan-No-More decisions — apply the APPROVED items exactly as shown on the map:"];
-  FIXES.forEach(id=>{const s=st[id]||{};const v=s.variant||defVariant(id);
+  const L=[];
+  FIXES.forEach(id=>{const s=st[id]||{}; if(!s.v) return;            // undecided: not in the transmission
+    const v=s.variant||defVariant(id);
     const vd=CARDS.find(c=>c.id===id).variants.find(x=>x.k===v);
-    L.push(`- ${(s.v||"undecided").toUpperCase()}${s.v?" (variant "+v+")":""}: ${vd&&vd.name?vd.name:id} [${id}${v}]`);});
-  return L.join("\n");
+    const name=vd&&vd.name?vd.name:id;
+    if(s.v==="approve") L.push(`- APPROVE (variant ${v}): ${name} [${id}${v}]`);
+    else if(CARDS.find(c=>c.id===id).rejectActs) L.push(`- REJECT (means: revert): ${name} [${id}${v}]`);
+  });
+  if(!L.length) return "No fixes approved yet — stamp Approve on the cards you want applied, then copy again.";
+  return "Padawan-No-More decisions — apply ONLY these, exactly as shown on the map:\n"+L.join("\n");
 }
 function tryCopy(txt, statEl){
   const ok = ()=>{ statEl.textContent="Copied ✓ — it will be done, Master."; };
