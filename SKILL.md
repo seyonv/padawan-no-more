@@ -1,11 +1,11 @@
 ---
-name: need-me-less
-description: Use when the user wants to know how often Claude stopped for human input, reduce permission prompts or approval gates, measure time spent waiting for answers, audit AskUserQuestion/plan-mode interruptions, or make Claude Code more autonomous ("need me less", "stop asking me so many questions", "why did you block on that", "intervention audit").
+name: padawan-no-more
+description: Use when the user wants to know how often Claude stopped for human input, reduce permission prompts or approval gates, measure time spent waiting for answers, audit AskUserQuestion/plan-mode interruptions, or make Claude Code more autonomous ("need me less", "padawan no more", "knight my claude", "run the jedi trials", "stop asking me so many questions", "why did you block on that", "intervention audit").
 ---
 
-# Need Me Less
+# Padawan No More
 
-Audit every point where Claude Code stopped and waited for a human, trace each stop
+Your padawan keeps stopping mid-mission to ask for guidance. Audit every point where Claude Code stopped and waited for a human, trace each stop
 to the config or skill that caused it, and publish an interactive map with
 ready-to-apply fix diffs the user approves or rejects.
 
@@ -59,7 +59,7 @@ it — make it non-blocking when the user is away, and batch questions).
    the Reset button clears saved decisions.
 
 5. **Apply decisions.** The page's "Copy decisions" button produces lines like
-   `- APPROVE (variant A): <name> [fix-1A]`. When the user pastes that block,
+   `- APPROVE (variant A): <name> [fix-1A]` (block header: "Padawan-No-More decisions"). When the user pastes that block,
    apply exactly the approved diffs (they're on the map, verbatim), skip rejected
    and undecided ones, and confirm each file touched.
 

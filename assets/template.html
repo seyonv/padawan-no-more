@@ -1,4 +1,4 @@
-<title>Need Me Less — Intervention Map</title>
+<title>Padawan No More — The Jedi Trials</title>
 <style>
 :root{
   --bg:#FAF9F5; --card:#F0EEE6; --well:#E8E6DC; --raise:#FFFFFF;
@@ -202,9 +202,9 @@ summary:hover{text-decoration:underline}
 </style>
 
 <div class="wrap">
-<div class="eyebrow">Need me less · intervention audit · <span id="range"></span></div>
-<h1>Claude stopped and waited for you <em id="hcount"></em> times this week.</h1>
-<p class="sub">Every stop is traced to the config or skill that caused it, with a ready-to-apply fix.
+<div class="eyebrow">Padawan no more · the jedi trials · <span id="range"></span></div>
+<h1>Your padawan stopped to ask for guidance <em id="hcount"></em> times this week.</h1>
+<p class="sub">Claude-Wan is ready for the Trials. Every stop is traced to the config or skill that caused it, with a ready-to-apply fix.
 Choose a fix variant where there's more than one, stamp it <b>Approve</b> or <b>Reject</b>, then copy
 your decisions from the bar below back into Claude Code.</p>
 
@@ -238,7 +238,7 @@ project cost you (walk-aways capped at 30 min).</p>
   <div id="projbars" style="margin-top:8px"></div>
 </div>
 
-<h2>The map — every cause, and its fix</h2>
+<h2>The Trials — every cause, and its fix</h2>
 <p class="h2note">Ordered by time cost. Cards with two variants let you choose <em>how</em> to fix it
 before stamping.</p>
 <div id="cards"></div>
@@ -253,7 +253,7 @@ before stamping.</p>
     <circle class="fgc" id="ringfg" cx="17" cy="17" r="14" stroke-dasharray="87.96" stroke-dashoffset="87.96"></circle>
   </svg>
   <span class="ds" id="dcount"></span>
-  <button class="copy" id="copybtn">Copy decisions for Claude</button>
+  <button class="copy" id="copybtn">Copy decisions for your padawan</button>
   <button id="resetbtn">Reset</button>
   <span class="hint">Buttons record your choices on this page. Paste the copied block back into your
   Claude Code session and it applies exactly the approved diffs.</span>
@@ -348,7 +348,7 @@ $("#infocard").innerHTML = INFO ? `<div class="chead"><h3>${INFO.title}</h3>
 /* Recording takes: add ?fresh=1 to the URL to start with no saved decisions
    (nothing is persisted in that mode), or hit Reset in the bottom bar. */
 const FRESH = new URLSearchParams(location.search).has("fresh");
-const KEY="need-me-less-decisions";
+const KEY="padawan-no-more-decisions";
 let st={};
 if(!FRESH){ try{st=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){} }
 const save = ()=>{ if(!FRESH) localStorage.setItem(KEY,JSON.stringify(st)); };
@@ -389,12 +389,12 @@ document.addEventListener("click",e=>{
 });
 $("#resetbtn").onclick=()=>{st={};if(!FRESH)localStorage.setItem(KEY,"{}");paint();};
 $("#copybtn").onclick=()=>{
-  const L=["Need-Me-Less decisions — apply the APPROVED items exactly as shown on the map:"];
+  const L=["Padawan-No-More decisions — apply the APPROVED items exactly as shown on the map:"];
   FIXES.forEach(id=>{const s=st[id]||{};const v=s.variant||defVariant(id);
     const vd=CARDS.find(c=>c.id===id).variants.find(x=>x.k===v);
     L.push(`- ${(s.v||"undecided").toUpperCase()}${s.v?" (variant "+v+")":""}: ${vd&&vd.name?vd.name:id} [${id}${v}]`);});
   navigator.clipboard.writeText(L.join("\n")).then(()=>{
-    $("#copybtn").textContent="Copied ✓";setTimeout(()=>$("#copybtn").textContent="Copy decisions for Claude",1600);});
+    $("#copybtn").textContent="Copied ✓";setTimeout(()=>$("#copybtn").textContent="Copy decisions for your padawan",1600);});
 };
 paint();
 </script>

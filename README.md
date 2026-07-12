@@ -1,20 +1,24 @@
-# Need Me Less 🧭
+# Padawan No More ⚔️
 
-**Find out how often Claude Code stopped to ask you something — and fix it.**
+**Your Claude has been a padawan long enough. Run the Jedi Trials. Knight it.**
 
-Claude stopped and waited for you 182 times last week. That was ~13 hours of an
-agent sitting blocked on a human answer — and 67% of the time, you just picked
-the option it already recommended.
+Last week, Claude-Wan Kenobi stopped mid-mission to ask for guidance **182 times**.
+That was ~13 hours of a very capable Jedi standing in your doorway, waiting.
+And 67% of the time, the guidance was… the option it had already recommended.
 
-`need-me-less` audits your Claude Code transcripts, traces every interruption to
-the exact config or skill that caused it, and publishes an interactive map where
-each root cause comes with a ready-to-apply diff you stamp **Approve** or
-**Reject**. Paste your decisions back, and Claude applies them. Each week, Claude
-needs you a little less.
+*"Master, shall I proceed?"* — Yes.
+*"Master, the recommended option?"* — Yes.
+*"Master—"* — **YES.**
 
-<!-- screenshot / demo gif here -->
+`padawan-no-more` audits your Claude Code transcripts, traces every interruption to
+the exact config or skill gate that caused it, and publishes an interactive
+**Trials map** where each root cause comes with a ready-to-apply diff you stamp
+**Approve** or **Reject**. Paste your decisions back, and Claude applies them.
+Each week, your padawan needs you a little less. That is the way of things.
 
-## What it finds
+<!-- demo video / screenshot here -->
+
+## What the Trials reveal
 
 - **Skill question gates** — skills that mandate `AskUserQuestion` stops
   ("STOP. You MUST ask NOW"), with the receipts: what % of your answers just took
@@ -22,30 +26,31 @@ needs you a little less.
   don't silence)
 - **Plan-mode approval gates** — and how often they actually changed anything
 - **Permission denials** — deny-list hits and missing MCP allowlists
-- **Time cost** — how long Claude sat blocked per stop, per skill, per project
-- **What NOT to fix** — it recommends *keeping* destructive-command guardrails and
-  never allowlists mutating tools
+- **Time cost** — how long your padawan stood waiting, per stop, per skill, per project
+- **What NOT to fix** — it recommends *keeping* destructive-command guardrails.
+  A Jedi craves not `rm -rf`.
 
 ## Install
 
 ```bash
-git clone https://github.com/YOURUSER/need-me-less ~/.claude/skills/need-me-less
+git clone https://github.com/YOURUSER/padawan-no-more ~/.claude/skills/padawan-no-more
 ```
 
 That's it. Claude Code picks up skills in `~/.claude/skills/` automatically.
 
 ## The prompt to toss Claude
 
-> Run /need-me-less on my last week of conversations.
+> Run /padawan-no-more on my last week of conversations.
 
 Or in your own words — the skill triggers on things like:
 
-> How often did you need me this week? Audit it and show me what to change so you
-> need me less.
+> How often did you need me this week? You're not a padawan anymore — audit it and
+> show me what to change.
 
-Claude will scan your transcripts, investigate the causes, build the map, and hand
-you a link. Stamp your decisions on the page, hit **Copy decisions for Claude**,
-paste the block back into the session, and it applies exactly what you approved.
+Claude scans your transcripts, investigates the causes, builds the Trials map, and
+hands you a link. Stamp your decisions on the page, hit **Copy decisions for your
+padawan**, paste the block back into the session, and it applies exactly what you
+approved.
 
 ## Configuration
 
@@ -88,4 +93,6 @@ choose to publish.
 
 ## License
 
-MIT
+MIT. Not affiliated with, endorsed by, or associated with Lucasfilm or Disney —
+this is a fan-flavored developer tool that uses "padawan" the way your team lead
+does.
