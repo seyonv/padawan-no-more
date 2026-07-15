@@ -126,10 +126,19 @@ if daycount:
                      "n": v["n"], "wait": round(v["wait"])})
         cur += timedelta(days=1)
 
-topwaits = sorted((e for e in ev if e.get("wait_s")),
-                  key=lambda e: -min(e["wait_s"], CAP))[:5]
+# one dialog can emit several question events sharing a single wait —
+# count it once so one stop can't fill the whole top-5
+_seen, topwaits = set(), []
+for e in sorted((e for e in ev if e.get("wait_s")), key=lambda e: -e["wait_s"]):
+    k = (e["session"], e.get("ts"))
+    if k in _seen:
+        continue
+    _seen.add(k)
+    topwaits.append(e)
+    if len(topwaits) == 5:
+        break
 topwaits = [{"q": (r.get("q") or "(blocked tool call)")[:160], "project": r["project"],
-             "skill": r.get("skill"), "w": r["w"],
+             "skill": r.get("skill"), "w": r["w"], "wr": r["wraw"],
              "over": bool(r["wraw"] and r["wraw"] != r["w"])}
             for r in (evrow(e) for e in topwaits)]
 
