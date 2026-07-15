@@ -1,32 +1,43 @@
 {
-  "meta": {"range": "Jul 5 – 12, 2026"},
+  "meta": { "range": "Jul 5 – 12, 2026" },
   "cards": [
     {
       "id": "fix-1",
       "title": "my-review-skill’s blocking question gates",
       "rec": ["rec-yes", "Recommend: approve · variant A"],
       "rowlabel": "review dialogs",
-      "filter": {"type": "ask_question", "skill": "my-review-skill"},
+      "filter": { "type": "ask_question", "skill": "my-review-skill" },
       "body": "<p><b>88% of answers took the recommended option</b> — the gate is ceremony.</p><div class=\"cause\"><b>Config responsible:</b> <code>~/.claude/skills/my-review-skill/SKILL.md</code></div>",
       "variants": [
         {
-          "k": "A", "label": "Patch the skill: add AUTOPILOT mode", "star": true,
+          "k": "A",
+          "label": "Patch the skill: add AUTOPILOT mode",
+          "star": true,
           "name": "Patch ~/.claude/skills/my-review-skill/SKILL.md: gates become decide-and-log",
           "diff": {
             "file": "~/.claude/skills/my-review-skill/SKILL.md",
             "note": "Keeps the review, removes the blocking.",
-            "hunks": [{"h": "@@ the gate @@", "lines": [
-              ["del", "STOP. Ask the user before continuing."],
-              ["add", "In AUTOPILOT (user away): adopt your recommendation, log it, continue."]
-            ]}]
+            "hunks": [
+              {
+                "h": "@@ the gate @@",
+                "lines": [
+                  ["del", "STOP. Ask the user before continuing."],
+                  [
+                    "add",
+                    "In AUTOPILOT (user away): adopt your recommendation, log it, continue."
+                  ]
+                ]
+              }
+            ]
           }
         }
       ]
     }
   ],
   "info": {
-    "title": "Interruptions", "rowlabel": "interruptions",
-    "filter": {"types": ["interruption"]},
+    "title": "Interruptions",
+    "rowlabel": "interruptions",
+    "filter": { "types": ["interruption"] },
     "body": "<p>Escape presses are you steering — no config causes or removes them.</p>"
   }
 }
