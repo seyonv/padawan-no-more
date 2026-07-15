@@ -6,9 +6,9 @@ Last week, Claude-Wan Kenobi stopped mid-mission to ask for guidance **182 times
 That was ~13 hours of a very capable Jedi standing in your doorway, waiting.
 And 67% of the time, the guidance was… the option it had already recommended.
 
-*"Master, shall I proceed?"* — Yes.
-*"Master, the recommended option?"* — Yes.
-*"Master—"* — **YES.**
+_"Master, shall I proceed?"_ — Yes.
+_"Master, the recommended option?"_ — Yes.
+_"Master—"_ — **YES.**
 
 `padawan-no-more` audits your Claude Code transcripts, traces every interruption to
 the exact config or skill gate that caused it, and publishes an interactive
@@ -26,8 +26,9 @@ Each week, your padawan needs you a little less. That is the way of things.
   don't silence)
 - **Plan-mode approval gates** — and how often they actually changed anything
 - **Permission denials** — deny-list hits and missing MCP allowlists
-- **Time cost** — how long your padawan stood waiting, per stop, per skill, per project
-- **What NOT to fix** — it recommends *keeping* destructive-command guardrails.
+- **Time cost** — how long your padawan stood waiting, per stop, per skill, per
+  project, per day (the week's rhythm), plus the five single costliest stops
+- **What NOT to fix** — it recommends _keeping_ destructive-command guardrails.
   A Jedi craves not `rm -rf`.
 
 ## Install
@@ -48,18 +49,20 @@ Or in your own words — the skill triggers on things like:
 > show me what to change.
 
 Claude scans your transcripts, investigates the causes, builds the Trials map, and
-hands you a link. Stamp your decisions on the page, hit **Copy decisions for your
-padawan**, paste the block back into the session, and it applies exactly what you
-approved.
+hands you a link. Stamp your decisions on the page — mouse or keyboard
+(`J`/`K` move between trials, `A` approve, `R` reject, `V` switch variant; the
+saber in the bottom bar fills as you go and shows the waiting time your approvals
+reclaim). Hit **Transmit decisions**, paste the block back into the session, and
+it applies exactly what you approved.
 
 ## Configuration
 
 Say it in the prompt — the skill passes it through:
 
-| What | How | Default |
-|---|---|---|
-| Audit window | "audit the last **30 days**" → `scan.py --days 30` | 7 days |
-| Walk-away cap | "cap waits at **10 minutes**" → `build_page.py --cap 600` — waits longer than this count as you-were-away and are capped in totals | 30 min |
+| What          | How                                                                                                                                | Default |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Audit window  | "audit the last **30 days**" → `scan.py --days 30`                                                                                 | 7 days  |
+| Walk-away cap | "cap waits at **10 minutes**" → `build_page.py --cap 600` — waits longer than this count as you-were-away and are capped in totals | 30 min  |
 
 ## Recording a demo? Retaking decisions?
 

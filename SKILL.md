@@ -13,13 +13,13 @@ ready-to-apply fix diffs the user approves or rejects.
 
 Interventions come from five places, and each has a different lever:
 
-| Source | Lever |
-|---|---|
-| Skill-mandated AskUserQuestion gates | Patch the skill, or a CLAUDE.md override (CLAUDE.md outranks skills) |
-| Plan-mode approval (ExitPlanMode) | CLAUDE.md rules that route into plan mode; `--permission-mode acceptEdits` headless |
-| Permission denials | `permissions.deny` / missing `permissions.allow` in settings.json |
-| MCP servers with no allowlist entry | project `.claude/settings.json` allow rules (read-only tools only) |
-| User interruptions (Escape) | Not config — report, don't "fix" |
+| Source                               | Lever                                                                               |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| Skill-mandated AskUserQuestion gates | Patch the skill, or a CLAUDE.md override (CLAUDE.md outranks skills)                |
+| Plan-mode approval (ExitPlanMode)    | CLAUDE.md rules that route into plan mode; `--permission-mode acceptEdits` headless |
+| Permission denials                   | `permissions.deny` / missing `permissions.allow` in settings.json                   |
+| MCP servers with no allowlist entry  | project `.claude/settings.json` allow rules (read-only tools only)                  |
+| User interruptions (Escape)          | Not config — report, don't "fix"                                                    |
 
 **Core judgment rule — read the first-option rate before proposing a fix:**
 a gate whose answers are ≥80% first-option is ceremony (automate it: auto-decide +
@@ -38,9 +38,9 @@ it — make it non-blocking when the user is away, and batch questions).
    - the SKILL.md of any skill that generated ≥5 dialogs — find the literal lines
      that mandate questions (e.g. "STOP. You MUST call AskUserQuestion")
    - `~/.claude/CLAUDE.md` rules that mandate skills or plan mode
-   Distinguish user-owned skills (`~/.claude/skills/…`, patchable) from plugin-cache
-   skills (`~/.claude/plugins/cache/…`, overwritten on update → prefer a CLAUDE.md
-   override and say so in the card).
+     Distinguish user-owned skills (`~/.claude/skills/…`, patchable) from plugin-cache
+     skills (`~/.claude/plugins/cache/…`, overwritten on update → prefer a CLAUDE.md
+     override and say so in the card).
 
 3. **Author cards** in `cards.json` (schema documented at the top of
    `scripts/build_page.py`). One card per root cause, ordered by wait-time cost.
@@ -54,11 +54,14 @@ it — make it non-blocking when the user is away, and batch questions).
 4. **Build + publish**:
    `python3 scripts/build_page.py --scan interventions.json --cards cards.json --template assets/template.html --out map.html`
    then publish `map.html` as an artifact. The page has approve/reject stamps per
-   fix, a variant chooser, wait-time totals, per-project intervention rates, and a
-   first-option breakdown. `?fresh=1` gives a stateless page for demo recordings;
-   the Reset button clears saved decisions.
+   fix, a variant chooser, wait-time totals, a per-day rhythm chart, the five
+   costliest single stops, per-project intervention rates, and a first-option
+   breakdown. Keyboard: J/K move between trials, A approve, R reject, V switch
+   variant; the bottom bar shows progress and the waiting time approvals would
+   reclaim. `?fresh=1` gives a stateless page for demo recordings; the Reset
+   button clears saved decisions (decisions are stored per audit date range).
 
-5. **Apply decisions.** The page's "Copy decisions" button produces lines like
+5. **Apply decisions.** The page's "Transmit decisions" button produces lines like
    `- APPROVE (variant A): <name> [fix-1A]` (block header: "Padawan-No-More decisions"). When the user pastes that block,
    apply exactly the approved diffs (they're on the map, verbatim), skip rejected
    and undecided ones, and confirm each file touched.

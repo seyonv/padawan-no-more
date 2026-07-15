@@ -97,6 +97,42 @@ wait = {"total": round(sum(waits)), "capped": round(sum(min(w, CAP) for w in wai
 
 plans = [e for e in ev if e["type"] == "plan_approval"]
 
+# ---- daily rhythm + costliest stops ----
+from datetime import datetime, timedelta
+
+
+def _day(ts):
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone().date()
+    except (ValueError, AttributeError):
+        return None
+
+
+daycount = defaultdict(lambda: {"n": 0, "wait": 0.0})
+for e in ev:
+    d0 = _day(e.get("ts"))
+    if d0 is None:
+        continue
+    daycount[d0]["n"] += 1
+    if e.get("wait_s"):
+        daycount[d0]["wait"] += min(e["wait_s"], CAP)
+days = []
+if daycount:
+    lo, hi = min(daycount), max(daycount)
+    cur = lo
+    while cur <= hi:
+        v = daycount.get(cur, {"n": 0, "wait": 0})
+        days.append({"d": cur.strftime("%a")[0] + cur.strftime("%d").lstrip("0"),
+                     "n": v["n"], "wait": round(v["wait"])})
+        cur += timedelta(days=1)
+
+topwaits = sorted((e for e in ev if e.get("wait_s")),
+                  key=lambda e: -min(e["wait_s"], CAP))[:5]
+topwaits = [{"q": (r.get("q") or "(blocked tool call)")[:160], "project": r["project"],
+             "skill": r.get("skill"), "w": r["w"],
+             "over": bool(r["wraw"] and r["wraw"] != r["w"])}
+            for r in (evrow(e) for e in topwaits)]
+
 # ---- resolve authored cards ----
 cards = []
 for c in authored.get("cards", []):
@@ -116,6 +152,7 @@ if info:
 
 DATA = {"meta": authored.get("meta", {"range": ""}), "projects": projects,
         "overall": dict(overall), "skillrows": skillrows, "wait": wait,
+        "days": days, "topwaits": topwaits,
         "cards": cards, "info": info,
         "totals": {"events": len(ev), "sessions": len(ss),
                    "sessions_hit": sum(1 for s in ss if s["interventions"] > 0),
