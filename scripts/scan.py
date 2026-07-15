@@ -142,6 +142,23 @@ for f in files:
                     sessions[key]["interventions"] += 1
     fh.close()
 
+# drop events older than the window (a long-lived session file can hold months
+# of history yet still be recently modified), then recount per-session
+def _in_window(e):
+    t = e.get("ts")
+    if not t:
+        return True
+    try:
+        return datetime.fromisoformat(t.replace("Z", "+00:00")).timestamp() >= CUTOFF
+    except ValueError:
+        return True
+
+events = [e for e in events if _in_window(e)]
+for s in sessions.values():
+    s["interventions"] = 0
+for e in events:
+    sessions[f"{e['project']}/{e['session']}"]["interventions"] += 1
+
 json.dump({"events": events, "sessions": list(sessions.values()),
            "meta": {"days": args.days, "files": len(files)}}, open(args.out, "w"))
 
