@@ -335,6 +335,49 @@
   .mascot {
     animation: bob 5.5s ease-in-out infinite;
   }
+  /* floating companion: appears once the hero mascot scrolls away */
+  .floatwan {
+    position: fixed;
+    right: 34px;
+    bottom: 96px;
+    white-space: nowrap;
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    pointer-events: none;
+    transition:
+      opacity 0.45s,
+      transform 0.45s;
+  }
+  .floatwan.hidden {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  @keyframes fwhop {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    35% {
+      transform: translateY(-10px);
+    }
+    65% {
+      transform: translateY(0);
+    }
+    82% {
+      transform: translateY(-4px);
+    }
+  }
+  .floatwan.hop {
+    animation: fwhop 0.55s ease-out;
+  }
+  @media (max-width: 900px) {
+    .floatwan {
+      display: none;
+    }
+  }
   .mrank {
     font-family: var(--mono);
     font-size: 10px;
@@ -1429,6 +1472,11 @@
   <div class="card" id="infocard"></div>
 </div>
 
+<div class="floatwan hidden" id="floatwan" aria-hidden="true">
+  <span id="floatwan-art"></span>
+  <div class="mrank" id="frank"></div>
+</div>
+
 <div class="dbar">
   <div class="dbar-in">
     <div class="saber" id="saber" aria-hidden="true">
@@ -1715,9 +1763,10 @@
   /* ---------- Claude the padawan: levels up as trials are decided ---------- */
   /* The Claude starburst in padawan cosplay. Gear appears as trials are decided:
    robe → belt → saber hilt → (all decided) blade ignites and the braid is cut. */
-  function mascotSVG() {
+  function mascotSVG(p, w) {
     const cx = 75,
       cy = 78;
+    const h = Math.round((w * 164) / 150);
     const lens = [44, 36, 42, 34, 44, 36, 42, 34, 44, 36, 42, 34];
     let rays = "";
     lens.forEach((L, i) => {
@@ -1725,27 +1774,27 @@
       transform="rotate(${i * 30} 0 0)" fill="#D97757" stroke="#D97757"
       stroke-width="2" stroke-linejoin="round"/>`;
     });
-    return `<svg width="150" height="164" viewBox="0 0 150 164" aria-hidden="true">
-   <circle id="m-glow" cx="${cx}" cy="${cy}" r="52" fill="rgba(63,174,104,.14)" style="display:none"/>
-   <g id="m-robe" style="display:none">
+    return `<svg width="${w}" height="${h}" viewBox="0 0 150 164" aria-hidden="true">
+   <circle id="${p}-glow" cx="${cx}" cy="${cy}" r="52" fill="rgba(63,174,104,.14)" style="display:none"/>
+   <g id="${p}-robe" style="display:none">
      <path d="M30,152 C36,112 52,94 75,90 C98,94 114,112 120,152 Z"
        fill="#E7DCC3" stroke="#D5C6A4" stroke-width="1.5"/>
      <path d="M62,92 C68,100 82,100 88,92 L84,152 L66,152 Z" fill="#F3EBD9"/>
    </g>
-   <g id="m-belt" style="display:none">
+   <g id="${p}-belt" style="display:none">
      <rect x="50" y="126" width="50" height="9" rx="3" fill="#6B4A2F"/>
      <rect x="70" y="127" width="10" height="7" rx="1.5" fill="#C9A227"/>
    </g>
-   <g id="m-hilt" style="display:none">
+   <g id="${p}-hilt" style="display:none">
      <rect x="46" y="130" width="7" height="17" rx="2" fill="#8E8B82"/>
      <rect x="45.5" y="127" width="8" height="4" rx="1" fill="#5E5C55"/>
      <rect x="47.5" y="136" width="4" height="3" fill="#3D6FB0"/>
    </g>
-   <g id="m-blade" style="display:none">
+   <g id="${p}-blade" style="display:none">
      <line x1="49" y1="126" x2="30" y2="66" stroke="rgba(63,174,104,.3)" stroke-width="10" stroke-linecap="round"/>
      <line x1="49" y1="126" x2="30" y2="66" stroke="#3FAE68" stroke-width="4.5" stroke-linecap="round"/>
    </g>
-   <g id="m-braid">
+   <g id="${p}-braid">
      <path d="M96,96 C104,108 103,124 99,138" fill="none" stroke="#7A5A3A" stroke-width="3.2" stroke-linecap="round"/>
      <path d="M99,106 l5,-2 M101,116 l5,-2 M101,126 l5,-1" stroke="#7A5A3A" stroke-width="1.6" stroke-linecap="round"/>
      <circle cx="99" cy="140" r="2.6" fill="#8A6A45"/>
@@ -1753,10 +1802,11 @@
    <g transform="translate(${cx} ${cy})">${rays}<circle r="12" fill="#D97757"/></g>
    <circle cx="68" cy="74" r="2.7" fill="#141413"/><circle cx="82" cy="74" r="2.7" fill="#141413"/>
    <circle cx="69" cy="73" r="0.9" fill="#FFF"/><circle cx="83" cy="73" r="0.9" fill="#FFF"/>
-   <path id="m-mouth" d="M69,82 Q75,86 81,82" fill="none" stroke="#8C4A2F" stroke-width="1.8" stroke-linecap="round"/>
+   <path d="M69,82 Q75,86 81,82" fill="none" stroke="#8C4A2F" stroke-width="1.8" stroke-linecap="round"/>
   </svg>`;
   }
-  $("#mascot").innerHTML = mascotSVG();
+  $("#mascot").innerHTML = mascotSVG("m", 150);
+  $("#floatwan-art").innerHTML = mascotSVG("f", 88);
   const RANKS = [
     "Padawan",
     "Padawan, learning",
@@ -1770,20 +1820,32 @@
     };
     const f = total ? done / total : 0,
       all = total > 0 && done === total;
-    show("m-robe", f >= 0.25 || (total <= 2 && done >= 1));
-    show("m-belt", f >= 0.5);
-    show("m-hilt", f >= 0.75 && !all);
-    show("m-blade", all);
-    show("m-glow", all);
-    show("m-braid", !all); // a knight's braid is cut at the ceremony
-    if (all) {
-      show("m-hilt", true);
-    }
-    const rank = $("#mrank");
-    rank.textContent = all
+    ["m", "f"].forEach((p) => {
+      show(p + "-robe", f >= 0.25 || (total <= 2 && done >= 1));
+      show(p + "-belt", f >= 0.5);
+      show(p + "-hilt", f >= 0.75 || all);
+      show(p + "-blade", all);
+      show(p + "-glow", all);
+      show(p + "-braid", !all); // a knight's braid is cut at the ceremony
+    });
+    const rankText = all
       ? "Padawan no more"
       : RANKS[Math.min(3, Math.floor(f * 4))];
-    rank.classList.toggle("final", all);
+    [$("#mrank"), $("#frank")].forEach((rank) => {
+      if (!rank) return;
+      rank.textContent = rankText;
+      rank.classList.toggle("final", all);
+    });
+    // hop the floating padawan when a decision lands
+    if (updateMascot.last != null && done !== updateMascot.last) {
+      const fw = $("#floatwan");
+      if (fw) {
+        fw.classList.remove("hop");
+        void fw.offsetWidth;
+        fw.classList.add("hop");
+      }
+    }
+    updateMascot.last = done;
     if (all && !updateMascot.done) {
       updateMascot.done = true;
       const b = $("#mbubble");
@@ -2064,6 +2126,17 @@
           b.style.opacity = 1;
         }, 500);
       }, 6400);
+    }
+  }
+  /* show the floating padawan only after the hero one scrolls out of view */
+  {
+    const hero = document.querySelector(".heroband"),
+      fw = $("#floatwan");
+    if (hero && fw && FIXES.length && "IntersectionObserver" in window) {
+      new IntersectionObserver(
+        ([e]) => fw.classList.toggle("hidden", e.isIntersecting),
+        { threshold: 0.1 },
+      ).observe(hero);
     }
   }
   paint();
