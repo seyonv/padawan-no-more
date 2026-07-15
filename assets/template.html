@@ -338,8 +338,10 @@
   /* floating companion: appears once the hero mascot scrolls away */
   .floatwan {
     position: fixed;
-    right: 34px;
-    bottom: 96px;
+    /* centered in the empty gutter right of the 1060px content column */
+    right: calc((100vw - 1060px) / 4 - 48px);
+    bottom: 152px;
+    width: 96px;
     white-space: nowrap;
     z-index: 8;
     display: flex;
@@ -373,7 +375,8 @@
   .floatwan.hop {
     animation: fwhop 0.55s ease-out;
   }
-  @media (max-width: 900px) {
+  @media (max-width: 1300px) {
+    /* no gutter to live in — the bottom-bar dots carry progress instead */
     .floatwan {
       display: none;
     }
