@@ -53,13 +53,16 @@ it — make it non-blocking when the user is away, and batch questions).
 
 4. **Build + publish**:
    `python3 scripts/build_page.py --scan interventions.json --cards cards.json --template assets/template.html --out map.html`
-   then publish `map.html` as an artifact. The page has approve/reject stamps per
-   fix, a variant chooser, wait-time totals, a per-day rhythm chart, the five
-   costliest single stops, per-project intervention rates, and a first-option
+   then publish `map.html` as an artifact. The page (Claude-styled light theme)
+   has approve/reject stamps per fix, a variant chooser, wait-time totals, a
+   per-day rhythm chart, the five costliest single stops (exact durations,
+   deduped per dialog), per-project intervention rates, and a first-option
    breakdown. Keyboard: J/K move between trials, A approve, R reject, V switch
    variant; the bottom bar shows progress and the waiting time approvals would
-   reclaim. `?fresh=1` gives a stateless page for demo recordings; the Reset
-   button clears saved decisions (decisions are stored per audit date range).
+   reclaim, and a Claude-starburst padawan mascot levels up toward Jedi as
+   trials are decided (braid cut at the last one). `?fresh=1` gives a stateless
+   page for demo recordings; the Reset button clears saved decisions (decisions
+   are stored per audit date range).
 
 5. **Apply decisions.** The page's "Transmit decisions" button produces lines like
    `- APPROVE (variant A): <name> [fix-1A]` (block header: "Padawan-No-More decisions"). When the user pastes that block,
