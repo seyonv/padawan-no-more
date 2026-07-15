@@ -170,4 +170,26 @@ DATA = {"meta": authored.get("meta", {"range": ""}), "projects": projects,
 
 out = open(args.template).read().replace("/*__DATA__*/", "const DATA = " + json.dumps(DATA) + ";")
 open(args.out, "w").write(out)
-print(f"wrote {args.out} ({len(out)} bytes) — {len(cards)} cards, {len(ev)} events")
+
+
+def _fd(s):
+    if s >= 3600:
+        return f"{int(s // 3600)}h {int(s % 3600 // 60):02d}m"
+    return f"{int(s // 60)}m {int(s % 60):02d}s" if s >= 60 else f"{int(s)}s"
+
+
+fixable = sum(c.get("wait") or 0 for c in cards if c.get("rec", [""])[0] == "rec-yes")
+saber = "▬" * len(cards)
+print()
+print("  ⚔  RAISING THE MAP " + "─" * 36)
+print(f"  ├─ trials authored     {len(cards)}  ▐{saber}▌")
+for i, c in enumerate(cards):
+    tick = "└─" if i == len(cards) - 1 and not fixable else "├─"
+    wait_s = f"  ·  ⏱ {_fd(c['wait'])}" if c.get("wait") else ""
+    print(f"  {tick}   {'I' * 0}{['I', 'II', 'III', 'IV', 'V', 'VI'][i] if i < 6 else i + 1}. {c.get('title', c['id'])[:52]}{wait_s}")
+if fixable:
+    print(f"  ├─ fixable waiting     ≈ {_fd(fixable)} reclaimed if approved")
+print(f"  └─ map raised          {args.out} ({len(out) // 1024} KB, {len(ev)} events)")
+print()
+print("  The map awaits your judgment, Master.")
+print()

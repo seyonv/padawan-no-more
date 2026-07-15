@@ -167,7 +167,25 @@ tc = Counter(e["type"] for e in events)
 sk = Counter(e.get("skill") or "(direct)" for e in events if e["type"] == "ask_question")
 first = sum(1 for e in events if e["type"] == "ask_question" and e.get("selected_rank") == 0)
 waits = [e["wait_s"] for e in events if e.get("wait_s")]
-print(f"files={len(files)} events={len(events)} {dict(tc)}")
-print(f"question sources: {dict(sk.most_common(10))}")
-print(f"first-option: {first}/{tc.get('ask_question', 0)}  total wait: {int(sum(waits) // 3600)}h{int(sum(waits) % 3600 // 60)}m")
-print(f"wrote {args.out}")
+nq = tc.get("ask_question", 0)
+
+
+def fdur(s):
+    if s >= 3600:
+        return f"{int(s // 3600)}h {int(s % 3600 // 60):02d}m"
+    return f"{int(s // 60)}m {int(s % 60):02d}s" if s >= 60 else f"{int(s)}s"
+
+
+top = sk.most_common(1)
+kinds = " · ".join(f"{v} {k.replace('_', ' ')}s" for k, v in tc.most_common())
+print()
+print("  ⚔  SCANNING THE ARCHIVES " + "─" * 30)
+print(f"  ├─ session logs read   {len(files)} (last {args.days} days)")
+print(f"  ├─ stops found         {len(events)}  ({kinds})")
+print(f"  ├─ time kept waiting   {fdur(sum(waits))} across {len(waits)} timed stops")
+if nq:
+    print(f"  ├─ 'yes, do that'      {first}/{nq} answers took the recommended option")
+if top:
+    print(f"  ├─ loudest gate        {top[0][0]} ({top[0][1]} dialogs)")
+print(f"  └─ wrote               {args.out}")
+print()

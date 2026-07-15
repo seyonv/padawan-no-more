@@ -26,6 +26,29 @@ a gate whose answers are ≥80% first-option is ceremony (automate it: auto-deci
 log); a gate with heavy free-text answers is extracting real intent (don't silence
 it — make it non-blocking when the user is away, and batch questions).
 
+## Mission log (how to narrate the run)
+
+Present the run as a live mission log so the user watches the Trials assemble.
+Print this checklist as a fenced code block after EACH phase completes, updating
+statuses in place — ✦ done (with real numbers), ▸ running, ○ waiting:
+
+```
+⚔  THE JEDI TRIALS ────────────────────────────────
+✦  Scan the archives      133 sessions · 129 stops · 9h 12m waiting
+▸  Trace each cause       reading 3 skill gates + settings.json…
+○  Author the trials
+○  Raise the map
+```
+
+Rules: keep exactly these four phase names; fill in the numbers from real
+output (scan.py and build_page.py print their own ⚔ summary boxes — let those
+show too, don't suppress them); never fake a number. After the final phase,
+close with the artifact link and one line:
+
+```
+⚔  The map awaits your judgment, Master.        <artifact link>
+```
+
 ## Procedure
 
 1. **Scan** (deterministic): `python3 scripts/scan.py --days 7 --out interventions.json`
