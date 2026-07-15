@@ -1,0 +1,7 @@
+.DS_Store
+.gstack/
+
+# audit outputs — contain personal transcript data, never commit
+interventions.json
+cards.json
+map.html
