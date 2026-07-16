@@ -46,10 +46,12 @@ Rules: keep exactly these four phase names; under "Author the trials", add one
 sub-line per trial as it lands (✦ done with its wait cost, ▸ in progress);
 fill in the numbers from real output (scan.py and build_page.py print their
 own ⚔ summary boxes — let those show too, don't suppress them); never fake a
-number. After the final phase, close with the artifact link and one line:
+number. The browser page (opened right after the scan) is the primary
+experience — it live-updates on its own; this terminal log is the co-pilot
+narration, not the main show. After the final phase, close with one line:
 
 ```
-⚔  The map awaits your judgment, Master.        <artifact link>
+⚔  The map awaits your judgment, Master.        (already open in your browser)
 ```
 
 ## Procedure
@@ -58,6 +60,20 @@ number. After the final phase, close with the artifact link and one line:
    — parses `~/.claude/projects/*/*.jsonl`, emits every intervention event with the
    skill in effect, which option the user picked, and `wait_s` (how long Claude sat
    blocked). Default window is 7 days; the user can ask for any `--days N`.
+
+   **Then open the live page immediately — within seconds of the scan, before
+   any tracing.** Write `cards.json` with just `meta.range` and `"cards": []`,
+   build with `--state scanning`, and open it in the user's browser:
+
+   ```
+   python3 scripts/build_page.py --scan interventions.json --cards cards.json \
+       --template assets/template.html --state scanning --out map.html
+   open map.html
+   ```
+
+   While assembling, the page reloads itself every few seconds — it IS the
+   progress display. Every rebuild you do from here on appears in the user's
+   browser automatically; never tell them to refresh.
 
 2. **Trace causes.** For each major event cluster, read the actual config:
    - `~/.claude/settings.json` and project `.claude/settings.json` (allow/deny/ask)
@@ -68,27 +84,28 @@ number. After the final phase, close with the artifact link and one line:
      skills (`~/.claude/plugins/cache/…`, overwritten on update → prefer a CLAUDE.md
      override and say so in the card).
 
-3. **Raise the map early, then author into it.** As soon as the trace names the
-   root causes, decide the trial count N and publish the assembling map:
-   - Write `cards.json` with `meta.range` and an empty `"cards": []`, then
-     `python3 scripts/build_page.py --scan interventions.json --cards cards.json --template assets/template.html --state authoring --total N --out map.html`
-     and publish `map.html` as an artifact NOW. The user gets a live page with
-     all stats, charts, and N shimmer-skeleton trials while you author.
+3. **Author the trials into the live page.** As soon as the trace names the
+   root causes, decide the trial count N and rebuild with
+   `--state authoring --total N` — the user's page flips from "tracing each
+   cause" to N shimmer-skeleton trials. Then:
    - Author cards one at a time in `cards.json` (schema at the top of
-     `scripts/build_page.py`), ordered by wait-time cost. After each 1–2 cards:
-     rebuild with the same `--state authoring --total N` flags and **republish
-     the same artifact URL** — the skeletons flip to real trials in place.
+     `scripts/build_page.py`), ordered by wait-time cost. **Rebuild after every
+     single card** with the same `--state authoring --total N` flags — each
+     rebuild flips one skeleton into a real trial on the user's screen. The
+     rebuild costs nothing; the delight of watching trials land is the point.
    - Each card: what happened (with the first-option % as evidence), a `cause`
      box naming the exact file, and 1–2 fix **variants** with real unified-diff
-     hunks. Every variant needs a one-line `name` — it becomes the text of the
-     decision the user pastes back. Recommendations: never recommend removing
+     hunks. Every variant needs a one-line `name` — it labels the decision in
+     the transmission. Recommendations: never recommend removing
      destructive-command deny rules (present the diff, recommend reject); never
      allowlist mutating MCP tools or arbitrary code execution; mark
      plugin-cache patches as ephemeral.
 
-4. **Final build + publish**: rebuild with `--state complete` (drop
-   `--total`) and republish the same artifact URL — this removes the build
-   meter and unlocks the Transmit button. The page (Claude-styled light theme)
+4. **Final build**: rebuild with `--state complete` (drop `--total`) — the
+   page stops self-reloading, the build meter becomes the decision saber, and
+   Transmit unlocks. Optionally also publish `map.html` as an artifact if the
+   user wants a durable/shareable link — the local page is the primary
+   experience. The page (Claude-styled light theme)
    has a sticky sidebar rail (mascot, decided-count, section nav with per-trial
    ✓/✕ marks), approve/reject stamps per fix, a variant chooser, wait-time
    totals, a per-day rhythm chart, the five costliest single stops (exact
@@ -100,10 +117,13 @@ number. After the final phase, close with the artifact link and one line:
    gives a stateless page for demo recordings; the Reset button clears saved
    decisions (decisions are stored per audit date range).
 
-5. **Apply decisions.** The page's "Transmit decisions" button produces lines like
-   `- APPROVE (variant A): <name> [fix-1A]` (block header: "Padawan-No-More decisions"). When the user pastes that block,
-   apply exactly the approved diffs (they're on the map, verbatim), skip rejected
-   and undecided ones, and confirm each file touched.
+5. **Apply decisions.** The page's "Transmit decisions" button produces a
+   self-contained block (header: "Padawan-No-More decisions") that carries the
+   full unified diff for every approved fix — file path + hunks, verbatim.
+   When the user pastes it (into any session, this skill loaded or not): apply
+   exactly those diffs, nothing more; skip rejected and undecided trials; if a
+   hunk no longer matches the target file, stop and show the conflict instead
+   of improvising; confirm each file touched.
 
 ## Configuration
 
@@ -112,7 +132,8 @@ number. After the final phase, close with the artifact link and one line:
   and is capped in totals (default 1800)
 - `--state scanning|authoring|complete` + `--total N` on build_page.py —
   non-complete states render skeleton trials for the cards not yet authored,
-  show a build meter in place of Transmit, and put the mascot in training
+  show a build meter in place of Transmit, put the mascot in training, and
+  make the page reload itself every ~4s so rebuilds appear live
 
 ## Common mistakes
 

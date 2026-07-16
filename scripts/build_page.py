@@ -200,5 +200,5 @@ if args.state == "complete":
     print("  The map awaits your judgment, Master.")
 else:
     total = max(args.total, len(cards))
-    print(f"  └─ map assembling      {args.out} — {len(cards)} of {total} trials aboard, republish as they land")
+    print(f"  └─ map assembling      {args.out} — {len(cards)} of {total} trials aboard; the open page updates itself")
 print()

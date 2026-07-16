@@ -808,6 +808,27 @@
     color: var(--warn);
     font-variant-numeric: tabular-nums;
   }
+  .livedot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--coral);
+    margin-right: 7px;
+    vertical-align: 1px;
+    animation: livepulse 1.6s ease-in-out infinite;
+  }
+  @keyframes livepulse {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgba(201, 100, 66, 0.45);
+    }
+    50% {
+      opacity: 0.55;
+      box-shadow: 0 0 0 5px rgba(201, 100, 66, 0);
+    }
+  }
   .dbar .copy:disabled {
     opacity: 0.45;
     cursor: default;
@@ -1508,7 +1529,7 @@
   }
   .tpanel textarea {
     width: 100%;
-    height: 190px;
+    height: 280px;
     background: var(--code);
     color: var(--code-ink);
     border: 0;
@@ -1698,8 +1719,8 @@
   <div class="tpanel">
     <h3>Transmission for your padawan</h3>
     <p class="tnote">
-      Paste this into your Claude Code session. Only the approved diffs are
-      applied — nothing else.
+      Self-contained — the full diffs travel with it. Paste into any Claude Code
+      session; only what's below gets applied, nothing else.
     </p>
     <textarea id="ttext" spellcheck="false"></textarea>
     <div class="trow">
@@ -2232,28 +2253,51 @@
     if (!FRESH) localStorage.setItem(KEY, "{}");
     paint();
   };
+  function diffText(d) {
+    return d.hunks
+      .map(
+        (h) =>
+          h.h +
+          "\n" +
+          h.lines
+            .map(([t, s]) => (t === "add" ? "+" : t === "del" ? "-" : " ") + s)
+            .join("\n"),
+      )
+      .join("\n");
+  }
   function decisionsText() {
     const L = [];
+    let n = 0;
     FIXES.forEach((id) => {
       const s = st[id] || {};
       if (!s.v) return; // undecided: not in the transmission
+      const c = CARDS.find((c) => c.id === id);
       const v = s.variant || defVariant(id);
-      const vd = CARDS.find((c) => c.id === id).variants.find((x) => x.k === v);
+      const vd = c.variants.find((x) => x.k === v);
+      if (s.v === "reject" && !c.rejectActs) return;
+      n++;
       const name = vd && vd.name ? vd.name : id;
-      if (s.v === "approve")
-        L.push(`- APPROVE (variant ${v}): ${name} [${id}${v}]`);
-      else if (CARDS.find((c) => c.id === id).rejectActs)
-        L.push(`- REJECT (means: revert): ${name} [${id}${v}]`);
+      const verb = s.v === "approve" ? "APPROVE — apply" : "REJECT — revert";
+      L.push(
+        `${n}. ${verb} [${id} · variant ${v}]: ${name}\n` +
+          `File: ${vd.diff.file}\n` +
+          "```diff\n" +
+          diffText(vd.diff) +
+          "\n```",
+      );
     });
     if (!L.length)
       return "No fixes approved yet — stamp Approve on the cards you want applied, then copy again.";
     const undecided = FIXES.filter((id) => !(st[id] && st[id].v)).length;
     return (
-      "Padawan-No-More decisions — apply ONLY these, exactly as shown on the map:\n" +
-      L.join("\n") +
+      "Padawan-No-More decisions — a self-contained transmission.\n" +
+      "Apply ONLY the diffs below, exactly as written: open each named file, apply its hunks, save, and confirm each file touched. " +
+      "No other changes, no improvisation. If a hunk no longer matches the file, stop and show the conflict instead of guessing." +
       (undecided
-        ? `\n(${undecided} trial${undecided > 1 ? "s" : ""} left undecided — not included.)`
-        : "")
+        ? ` ${undecided} trial${undecided > 1 ? "s were" : " was"} left undecided — do nothing for those.`
+        : "") +
+      "\n\n" +
+      L.join("\n\n")
     );
   }
   function tryCopy(txt, statEl) {
@@ -2390,6 +2434,9 @@
       sk += `<div class="skel"><div class="skhead"><span class="trialnum">Trial ${ROMAN(i + 1)}</span><span class="skstate">${i === have ? "being authored" : "awaiting authoring"}</span></div>
       <div class="skbar" style="width:58%"></div><div class="skbar" style="width:86%"></div><div class="skbar" style="width:41%"></div></div>`;
     }
+    if (!total)
+      sk = `<div class="skel"><div class="skhead"><span class="trialnum">The Trials</span><span class="skstate">tracing each cause</span></div>
+      <div class="skbar" style="width:58%"></div><div class="skbar" style="width:86%"></div><div class="skbar" style="width:41%"></div></div>`;
     if (sk) $("#cards").insertAdjacentHTML("beforeend", sk);
     const cb = $("#copybtn");
     cb.disabled = true;
@@ -2397,13 +2444,18 @@
       total > 0 ? `Assembling ${have} / ${total}…` : "Assembling…";
     const rb = $("#railbuild");
     rb.hidden = false;
-    rb.textContent =
-      total > 0
-        ? `⏳ authoring trial ${Math.min(have + 1, total)} of ${total}`
-        : "⏳ scanning the archives";
+    rb.innerHTML =
+      `<span class="livedot" aria-hidden="true"></span>` +
+      (total > 0
+        ? `live — authoring trial ${Math.min(have + 1, total)} of ${total}`
+        : `live — tracing each cause`);
     $("#mascot").classList.add("training");
     $("#fixline").innerHTML =
-      `<span class="buildnote">⏳ The map is still assembling — refresh in a minute to see new trials land.</span>`;
+      `<span class="buildnote"><span class="livedot" aria-hidden="true"></span>The map is assembling itself — new trials land on this page as they're authored.</span>`;
+    // the page is its own progress display: re-fetch every few seconds until
+    // the complete build replaces this file (decisions live in localStorage
+    // and the browser restores scroll, so reloads are invisible)
+    setTimeout(() => location.reload(), 3500);
   }
   paint();
 </script>

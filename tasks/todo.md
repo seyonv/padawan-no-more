@@ -26,3 +26,11 @@ errors:
   "⏳ authoring trial 3 of 5", hero notes the map is still assembling.
 - 1024px: rail collapses to a horizontal strip (nav + bubble hidden).
 - Rail bubble auto-hides under 830px viewport height so nav stays reachable.
+
+# Self-contained transmission + live self-reloading page — 2026-07-16
+
+- [x] Transmission embeds full unified diffs + file paths (works in any session)
+- [x] Assembling page self-reloads every 3.5s; stops at --state complete
+- [x] Scanning state: "tracing each cause" placeholder, pulsing live dot
+- [x] SKILL.md: local-first flow — open map.html seconds after scan, rebuild per card, artifact optional at end
+- [x] Verified: scanning→authoring→complete transitions live-update an open tab; transmission text carries verbatim diffs
