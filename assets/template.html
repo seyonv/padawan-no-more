@@ -55,6 +55,14 @@
   }
   html {
     background: #faf9f5;
+    scroll-behavior: smooth;
+  }
+  h2[id],
+  #sec-verdict {
+    scroll-margin-top: 22px;
+  }
+  .maincol {
+    min-width: 0;
   }
   body {
     background: var(--bg);
@@ -69,9 +77,27 @@
   .wrap {
     position: relative;
     z-index: 1;
-    max-width: 1060px;
+    max-width: 1300px;
     margin: 0 auto;
-    padding: 56px 32px 170px;
+    padding: 48px 32px 170px;
+  }
+  @media (min-width: 1100px) {
+    .wrap {
+      display: grid;
+      grid-template-columns: 232px minmax(0, 1fr);
+      gap: 0 56px;
+      align-items: start;
+    }
+    .rail {
+      position: sticky;
+      top: 28px;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .rail::-webkit-scrollbar {
+      display: none;
+    }
   }
   ::selection {
     background: rgba(201, 100, 66, 0.22);
@@ -187,7 +213,7 @@
   /* — hero band — */
   .heroband {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr;
     gap: 36px;
     align-items: stretch;
     margin: 40px 0 0;
@@ -237,7 +263,7 @@
   .minitiles {
     display: grid;
     grid-template-columns: repeat(2, minmax(150px, 1fr));
-    gap: 0;
+    gap: 8px 0;
     align-content: center;
   }
   .mt {
@@ -271,23 +297,6 @@
   }
 
   /* — Claude the padawan — */
-  .mascotwrap {
-    width: 230px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 0 2px;
-    justify-content: flex-end;
-  }
-  @media (max-width: 900px) {
-    .mascotwrap {
-      width: 100%;
-      flex-direction: row;
-      justify-content: center;
-      gap: 20px;
-    }
-  }
   .bubble {
     position: relative;
     background: var(--well);
@@ -335,50 +344,145 @@
   .mascot {
     animation: bob 5.5s ease-in-out infinite;
   }
-  /* floating companion: appears once the hero mascot scrolls away */
-  .floatwan {
-    position: fixed;
-    /* centered in the empty gutter right of the 1060px content column */
-    right: calc((100vw - 1060px) / 4 - 48px);
-    bottom: 152px;
-    width: 96px;
-    white-space: nowrap;
-    z-index: 8;
+  /* — sidebar rail: mascot, progress, section nav — */
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .railbrand {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--coral);
+    font-weight: 600;
+  }
+  .railbrand span {
+    display: block;
+    margin-top: 3px;
+    color: var(--ink3);
+    font-weight: 400;
+    letter-spacing: 0.2em;
+  }
+  .railcard {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 16px 14px 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    pointer-events: none;
+    gap: 10px;
+  }
+  .railprog {
+    width: 100%;
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink2);
+    font-variant-numeric: tabular-nums;
+  }
+  .railprog b {
+    color: var(--ink);
+  }
+  .railprog .reclaimline {
+    color: var(--ok);
+  }
+  .railnav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .railnav a {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink2);
+    text-decoration: none;
+    padding: 7px 12px;
+    border-left: 2px solid var(--line);
     transition:
-      opacity 0.45s,
-      transform 0.45s;
+      color 0.2s,
+      border-color 0.2s,
+      background 0.2s;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: baseline;
   }
-  .floatwan.hidden {
-    opacity: 0;
-    transform: translateY(10px);
+  .railnav a:hover {
+    color: var(--coral);
   }
-  @keyframes fwhop {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    35% {
-      transform: translateY(-10px);
-    }
-    65% {
-      transform: translateY(0);
-    }
-    82% {
-      transform: translateY(-4px);
-    }
+  .railnav a.on {
+    color: var(--coral);
+    border-left-color: var(--coral);
+    background: var(--coral-dim);
   }
-  .floatwan.hop {
-    animation: fwhop 0.55s ease-out;
+  .railnav a.sub {
+    padding-left: 26px;
+    text-transform: none;
+    letter-spacing: 0.03em;
+    font-size: 11px;
+    white-space: nowrap;
   }
-  @media (max-width: 1300px) {
-    /* no gutter to live in — the bottom-bar dots carry progress instead */
-    .floatwan {
+  .railnav a.sub .subtitle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .railnav .mark {
+    font-size: 10px;
+    flex: none;
+  }
+  .railnav .mark.ok {
+    color: var(--ok);
+  }
+  .railnav .mark.no {
+    color: var(--ink3);
+  }
+  @media (max-height: 830px) and (min-width: 1100px) {
+    .rail .bubble {
       display: none;
+    }
+  }
+  @media (max-width: 1099.98px) {
+    .rail {
+      flex-direction: row;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 30px;
+    }
+    .railnav,
+    .rail .bubble {
+      display: none;
+    }
+    .railcard {
+      flex-direction: row;
+      padding: 10px 16px;
+      gap: 14px;
+    }
+    .railcard .mascot svg {
+      width: 54px;
+      height: 59px;
+    }
+    .railprog {
+      border-top: 0;
+      border-left: 1px solid var(--line);
+      padding: 2px 0 2px 14px;
+      align-items: flex-start;
+    }
+  }
+  @media (max-width: 560px) {
+    .rail {
+      flex-direction: column;
+      align-items: stretch;
     }
   }
   .mrank {
@@ -421,26 +525,22 @@
     max-width: 74ch;
   }
   .duo {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
-    align-items: start;
-  }
-  @media (max-width: 820px) {
-    .duo {
-      grid-template-columns: 1fr;
-    }
   }
   /* rhythm bars */
   .rhythm {
     display: flex;
     align-items: flex-end;
-    gap: 6px;
+    justify-content: center;
+    gap: 10px;
     height: 110px;
     margin-top: 14px;
   }
   .rb {
     flex: 1;
+    max-width: 88px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -476,8 +576,8 @@
   }
   .twr {
     display: grid;
-    grid-template-columns: 80px 1fr;
-    gap: 14px;
+    grid-template-columns: 96px 1fr;
+    gap: 18px;
     padding: 10px 0;
     border-top: 1px solid var(--line);
     align-items: baseline;
@@ -627,6 +727,90 @@
     .brow {
       grid-template-columns: 100px 1fr 112px;
     }
+  }
+
+  /* — skeleton trials (map still assembling) — */
+  .skel {
+    position: relative;
+    border: 1px dashed var(--line2);
+    border-radius: 14px;
+    background: var(--panel);
+    margin: 26px 0;
+    padding: 24px 28px 26px;
+    overflow: hidden;
+  }
+  .skel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 32%,
+      rgba(201, 100, 66, 0.07) 50%,
+      transparent 68%
+    );
+    transform: translateX(-100%);
+    animation: shimmer 2.4s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    to {
+      transform: translateX(100%);
+    }
+  }
+  .skel .skhead {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .skel .skstate {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--warn);
+  }
+  .skel .skstate::after {
+    content: "…";
+    animation: ellipsis 1.6s steps(4) infinite;
+    display: inline-block;
+    width: 1.4em;
+    text-align: left;
+  }
+  @keyframes ellipsis {
+    0% {
+      content: "";
+    }
+    25% {
+      content: ".";
+    }
+    50% {
+      content: "..";
+    }
+    75% {
+      content: "...";
+    }
+  }
+  .skel .skbar {
+    height: 11px;
+    border-radius: 6px;
+    background: var(--well);
+    margin-top: 14px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .mascot.training {
+      animation: bob 1.15s ease-in-out infinite;
+    }
+  }
+  .buildnote {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: var(--warn);
+    font-variant-numeric: tabular-nums;
+  }
+  .dbar .copy:disabled {
+    opacity: 0.45;
+    cursor: default;
   }
 
   /* — trial cards — */
@@ -1125,7 +1309,7 @@
     padding: 14px 28px 12px;
   }
   .dbar-in {
-    max-width: 1060px;
+    max-width: 1300px;
     margin: 0 auto;
     display: flex;
     gap: 14px;
@@ -1358,35 +1542,9 @@
 </style>
 
 <div class="wrap">
-  <div class="eyebrow">
-    <b>Padawan No More</b> <span>The Jedi Trials</span> <span id="range"></span>
-  </div>
-  <h1>Help Claude-Wan Kenobi become a <em>Jedi</em>.</h1>
-  <p class="lede">
-    Your padawan stopped and waited for your answer <b id="hcount"></b> times
-    this week.
-  </p>
-  <p class="sub">
-    This audit read the week's sessions — every question, permission prompt, and
-    plan gate — and traced each stop to the skill or setting behind it. Approve
-    the fixes below and Claude handles more on his own: more done, faster, with
-    fewer taps on your shoulder.
-  </p>
-  <div class="steps" aria-label="How it works">
-    <span><em>1</em> Read each trial</span>
-    <span><em>2</em> Stamp Approve or Reject</span>
-    <span><em>3</em> Transmit — Claude applies only what you approved</span>
-  </div>
-
-  <div class="heroband">
-    <div class="bigwait">
-      <div class="v" id="bigwait"></div>
-      <div class="l">waiting on your answers this week</div>
-      <div class="fixline" id="fixline"></div>
-      <div class="l capline" id="capnote"></div>
-    </div>
-    <div class="minitiles" id="tiles"></div>
-    <div class="mascotwrap">
+  <aside class="rail" id="rail">
+    <div class="railbrand">Padawan No More</div>
+    <div class="railcard">
       <div class="bubble" id="mbubble">
         <b>Master —</b> <span id="mq"></span>
       </div>
@@ -1398,86 +1556,117 @@
           style="text-align: center; margin-top: 6px"
         ></div>
       </div>
+      <div class="railprog">
+        <span id="raildcount"></span>
+        <span class="reclaimline" id="railreclaim"></span>
+        <span class="buildnote" id="railbuild" hidden></span>
+      </div>
     </div>
-  </div>
-
-  <div class="duo" id="pulse" style="margin-top: 20px" hidden>
-    <div class="panel" id="rhythmpanel" hidden>
-      <h3>Stops per day</h3>
-      <p class="note">The shape of the week — when he needed you.</p>
-      <div class="rhythm" id="rhythm"></div>
+    <nav class="railnav" id="railnav" aria-label="Sections"></nav>
+  </aside>
+  <main class="maincol">
+    <div class="eyebrow"><b>The Jedi Trials</b> <span id="range"></span></div>
+    <h1>Help Claude-Wan Kenobi become a <em>Jedi</em>.</h1>
+    <p class="lede">
+      Your padawan stopped and waited for your answer <b id="hcount"></b> times
+      this week.
+    </p>
+    <p class="sub">
+      This audit read the week's sessions — every question, permission prompt,
+      and plan gate — and traced each stop to the skill or setting behind it.
+      Approve the fixes below and Claude handles more on his own: more done,
+      faster, with fewer taps on your shoulder.
+    </p>
+    <div class="steps" aria-label="How it works">
+      <span><em>1</em> Read each trial</span>
+      <span><em>2</em> Stamp Approve or Reject</span>
+      <span><em>3</em> Transmit — Claude applies only what you approved</span>
     </div>
-    <div class="panel" id="twpanel" hidden>
-      <h3>Costliest stops</h3>
-      <p class="note">The five questions that kept Claude waiting longest.</p>
-      <div class="tw" id="topwaits"></div>
+
+    <div class="heroband" id="sec-verdict">
+      <div class="bigwait">
+        <div class="v" id="bigwait"></div>
+        <div class="l">waiting on your answers this week</div>
+        <div class="fixline" id="fixline"></div>
+        <div class="l capline" id="capnote"></div>
+      </div>
+      <div class="minitiles" id="tiles"></div>
     </div>
-  </div>
 
-  <h2>The Answers</h2>
-  <p class="h2note">
-    Every question Claude asked, by how you answered.
-    <em>Mostly first-option</em> — you were confirming what Claude already
-    recommended; the question was ceremony, automate it.
-    <em>Mostly free-text</em> — your answers carried real direction; keep the
-    question, just batch it.
-  </p>
-  <div class="panel">
-    <h3>All <span class="num" id="qn"></span> option dialogs</h3>
-    <p class="note" id="selnote"></p>
-    <div class="hero-split" id="hero"></div>
-    <div class="legend">
-      <span
-        ><span class="sw" style="background: var(--c1)"></span>First option —
-        Claude's own recommendation</span
-      >
-      <span
-        ><span class="sw" style="background: var(--c2)"></span>A different
-        option</span
-      >
-      <span
-        ><span class="sw" style="background: var(--c3)"></span>Free-text
-        answer</span
-      >
-      <span
-        ><span class="sw" style="background: var(--c4)"></span>Unanswered</span
-      >
+    <div class="duo" id="pulse" style="margin-top: 20px" hidden>
+      <div class="panel" id="rhythmpanel" hidden>
+        <h3>Stops per day</h3>
+        <p class="note">The shape of the week — when he needed you.</p>
+        <div class="rhythm" id="rhythm"></div>
+      </div>
+      <div class="panel" id="twpanel" hidden>
+        <h3>Costliest stops</h3>
+        <p class="note">The five questions that kept Claude waiting longest.</p>
+        <div class="tw" id="topwaits"></div>
+      </div>
     </div>
-    <div id="skillbars" style="margin-top: 18px"></div>
-  </div>
 
-  <h2>The Systems</h2>
-  <p class="h2note">
-    Where he needed you — the share of each project's sessions with at least one
-    stop, and the waiting time it cost.
-  </p>
-  <div class="panel">
-    <h3>
-      <span class="num" id="pn"></span> sessions ·
-      <span class="num" id="pc"></span> projects
-    </h3>
-    <div id="projbars" style="margin-top: 10px"></div>
-  </div>
+    <h2 id="sec-answers">The Answers</h2>
+    <p class="h2note">
+      Every question Claude asked, by how you answered.
+      <em>Mostly first-option</em> — you were confirming what Claude already
+      recommended; the question was ceremony, automate it.
+      <em>Mostly free-text</em> — your answers carried real direction; keep the
+      question, just batch it.
+    </p>
+    <div class="panel">
+      <h3>All <span class="num" id="qn"></span> option dialogs</h3>
+      <p class="note" id="selnote"></p>
+      <div class="hero-split" id="hero"></div>
+      <div class="legend">
+        <span
+          ><span class="sw" style="background: var(--c1)"></span>First option —
+          Claude's own recommendation</span
+        >
+        <span
+          ><span class="sw" style="background: var(--c2)"></span>A different
+          option</span
+        >
+        <span
+          ><span class="sw" style="background: var(--c3)"></span>Free-text
+          answer</span
+        >
+        <span
+          ><span class="sw" style="background: var(--c4)"></span
+          >Unanswered</span
+        >
+      </div>
+      <div id="skillbars" style="margin-top: 18px"></div>
+    </div>
 
-  <h2>The Trials</h2>
-  <p class="h2note">
-    One card per root cause, costliest first. Each names the exact file
-    responsible and comes with a ready diff — <em>Approve</em> to apply it,
-    <em>Reject</em> to skip. Nothing changes until you transmit.
-  </p>
-  <div id="cards"></div>
+    <h2 id="sec-systems">The Systems</h2>
+    <p class="h2note">
+      Where he needed you — the share of each project's sessions with at least
+      one stop, and the waiting time it cost.
+    </p>
+    <div class="panel">
+      <h3>
+        <span class="num" id="pn"></span> sessions ·
+        <span class="num" id="pc"></span> projects
+      </h3>
+      <div id="projbars" style="margin-top: 10px"></div>
+    </div>
 
-  <h2>Beyond Config</h2>
-  <p class="h2note">
-    Times you pressed Escape or dismissed a dialog. That's you steering — no
-    setting causes it, and none should remove it.
-  </p>
-  <div class="card" id="infocard"></div>
-</div>
+    <h2 id="sec-trials">The Trials</h2>
+    <p class="h2note">
+      One card per root cause, costliest first. Each names the exact file
+      responsible and comes with a ready diff — <em>Approve</em> to apply it,
+      <em>Reject</em> to skip. Nothing changes until you transmit.
+    </p>
+    <div id="cards"></div>
 
-<div class="floatwan hidden" id="floatwan" aria-hidden="true">
-  <span id="floatwan-art"></span>
-  <div class="mrank" id="frank"></div>
+    <h2 id="sec-beyond">Beyond Config</h2>
+    <p class="h2note">
+      Times you pressed Escape or dismissed a dialog. That's you steering — no
+      setting causes it, and none should remove it.
+    </p>
+    <div class="card" id="infocard"></div>
+  </main>
 </div>
 
 <div class="dbar">
@@ -1808,8 +1997,7 @@
    <path d="M69,82 Q75,86 81,82" fill="none" stroke="#8C4A2F" stroke-width="1.8" stroke-linecap="round"/>
   </svg>`;
   }
-  $("#mascot").innerHTML = mascotSVG("m", 150);
-  $("#floatwan-art").innerHTML = mascotSVG("f", 88);
+  $("#mascot").innerHTML = mascotSVG("m", 128);
   const RANKS = [
     "Padawan",
     "Padawan, learning",
@@ -1823,7 +2011,7 @@
     };
     const f = total ? done / total : 0,
       all = total > 0 && done === total;
-    ["m", "f"].forEach((p) => {
+    ["m"].forEach((p) => {
       show(p + "-robe", f >= 0.25 || (total <= 2 && done >= 1));
       show(p + "-belt", f >= 0.5);
       show(p + "-hilt", f >= 0.75 || all);
@@ -1834,19 +2022,10 @@
     const rankText = all
       ? "Padawan no more"
       : RANKS[Math.min(3, Math.floor(f * 4))];
-    [$("#mrank"), $("#frank")].forEach((rank) => {
-      if (!rank) return;
+    const rank = $("#mrank");
+    if (rank) {
       rank.textContent = rankText;
       rank.classList.toggle("final", all);
-    });
-    // hop the floating padawan when a decision lands
-    if (updateMascot.last != null && done !== updateMascot.last) {
-      const fw = $("#floatwan");
-      if (fw) {
-        fw.classList.remove("hop");
-        void fw.offsetWidth;
-        fw.classList.add("hop");
-      }
     }
     updateMascot.last = done;
     if (all && !updateMascot.done) {
@@ -1930,8 +2109,14 @@
     });
     const done = FIXES.filter((id) => st[id] && st[id].v).length;
     $("#dcount").innerHTML = `<b>${done} / ${FIXES.length}</b> decided`;
-    $("#blade").style.width =
-      (FIXES.length ? Math.round((100 * done) / FIXES.length) : 0) + "%";
+    $("#raildcount").innerHTML = FIXES.length
+      ? `<b>${done} / ${FIXES.length}</b> trials decided`
+      : "";
+    $("#blade").style.width = ASSEMBLING
+      ? Math.round(
+          (100 * CARDS.length) / Math.max(BUILD.total || 0, CARDS.length, 1),
+        ) + "%"
+      : (FIXES.length ? Math.round((100 * done) / FIXES.length) : 0) + "%";
     $("#saber").classList.toggle(
       "lit",
       FIXES.length > 0 && done === FIXES.length,
@@ -1947,6 +2132,18 @@
     $("#reclaim").innerHTML = reclaimed
       ? `≈ <b>${fdur(reclaimed)}</b> reclaimed`
       : "";
+    $("#railreclaim").innerHTML = reclaimed
+      ? `≈ ${fdur(reclaimed)} reclaimed`
+      : "";
+    // decision marks on the rail's trial links
+    FIXES.forEach((id) => {
+      const mark = document.querySelector(`.railnav [data-nav="${id}"] .mark`);
+      if (!mark) return;
+      const v = (st[id] || {}).v;
+      mark.textContent = v === "approve" ? "✓" : v === "reject" ? "✕" : "";
+      mark.classList.toggle("ok", v === "approve");
+      mark.classList.toggle("no", v === "reject");
+    });
     $("#nextbtn").style.visibility = done < FIXES.length ? "visible" : "hidden";
     updateMascot(done, FIXES.length);
   }
@@ -2131,16 +2328,82 @@
       }, 6400);
     }
   }
-  /* show the floating padawan only after the hero one scrolls out of view */
+  /* ---------- rail nav + scrollspy ---------- */
   {
-    const hero = document.querySelector(".heroband"),
-      fw = $("#floatwan");
-    if (hero && fw && FIXES.length && "IntersectionObserver" in window) {
-      new IntersectionObserver(
-        ([e]) => fw.classList.toggle("hidden", e.isIntersecting),
-        { threshold: 0.1 },
-      ).observe(hero);
+    const secs = [
+      ["sec-verdict", "The Verdict"],
+      ["sec-answers", "The Answers"],
+      ["sec-systems", "The Systems"],
+      ["sec-trials", "The Trials"],
+      ["sec-beyond", "Beyond Config"],
+    ].filter(([id]) => document.getElementById(id));
+    const subs = CARDS.filter((c) => c.variants)
+      .map(
+        (c, i) =>
+          `<a class="sub" href="#${c.id}" data-nav="${c.id}"><span class="subtitle">${ROMAN(i + 1)} · ${esc(c.title)}</span><span class="mark"></span></a>`,
+      )
+      .join("");
+    $("#railnav").innerHTML = secs
+      .map(
+        ([id, label]) =>
+          `<a href="#${id}" data-nav="${id}">${label}</a>${id === "sec-trials" ? subs : ""}`,
+      )
+      .join("");
+    const links = [...document.querySelectorAll("#railnav a")];
+    const targets = links
+      .map((a) => document.getElementById(a.dataset.nav))
+      .filter(Boolean);
+    // reading line at 140px: the last section header (and trial card) that has
+    // crossed it is the active one — robust for very tall cards
+    const spy = () => {
+      let sec = null,
+        sub = null;
+      targets.forEach((t) => {
+        if (t.getBoundingClientRect().top <= 140) {
+          if (t.id.startsWith("sec-")) {
+            sec = t.id;
+            sub = null;
+          } else sub = t.id;
+        }
+      });
+      links.forEach((a) =>
+        a.classList.toggle(
+          "on",
+          a.dataset.nav === sec || a.dataset.nav === sub,
+        ),
+      );
+    };
+    addEventListener("scroll", () => requestAnimationFrame(spy), {
+      passive: true,
+    });
+    spy();
+  }
+
+  /* ---------- build state: the map may still be assembling ---------- */
+  const BUILD = DATA.build || { state: "complete" };
+  const ASSEMBLING = BUILD.state && BUILD.state !== "complete";
+  if (ASSEMBLING) {
+    const total = Math.max(BUILD.total || 0, CARDS.length),
+      have = CARDS.length;
+    let sk = "";
+    for (let i = have; i < total; i++) {
+      sk += `<div class="skel"><div class="skhead"><span class="trialnum">Trial ${ROMAN(i + 1)}</span><span class="skstate">${i === have ? "being authored" : "awaiting authoring"}</span></div>
+      <div class="skbar" style="width:58%"></div><div class="skbar" style="width:86%"></div><div class="skbar" style="width:41%"></div></div>`;
     }
+    if (sk) $("#cards").insertAdjacentHTML("beforeend", sk);
+    const cb = $("#copybtn");
+    cb.disabled = true;
+    cb.textContent =
+      total > 0 ? `Assembling ${have} / ${total}…` : "Assembling…";
+    const rb = $("#railbuild");
+    rb.hidden = false;
+    rb.textContent =
+      total > 0
+        ? `⏳ authoring trial ${Math.min(have + 1, total)} of ${total}`
+        : "⏳ scanning the archives";
+    $("#mascot").classList.add("training");
+    $("#fixline").innerHTML =
+      `<span class="buildnote">⏳ The map is still assembling — refresh in a minute to see new trials land.</span>`;
   }
   paint();
 </script>

@@ -35,15 +35,18 @@ statuses in place — ✦ done (with real numbers), ▸ running, ○ waiting:
 ```
 ⚔  THE JEDI TRIALS ────────────────────────────────
 ✦  Scan the archives      133 sessions · 129 stops · 9h 12m waiting
-▸  Trace each cause       reading 3 skill gates + settings.json…
-○  Author the trials
+✦  Trace each cause       3 skill gates + settings.json
+▸  Author the trials      II of V — map is live, assembling
+   ✦  Trial I   plan-exit-review          ⏱ 4h 23m
+   ▸  Trial II  brainstorming gates…
 ○  Raise the map
 ```
 
-Rules: keep exactly these four phase names; fill in the numbers from real
-output (scan.py and build_page.py print their own ⚔ summary boxes — let those
-show too, don't suppress them); never fake a number. After the final phase,
-close with the artifact link and one line:
+Rules: keep exactly these four phase names; under "Author the trials", add one
+sub-line per trial as it lands (✦ done with its wait cost, ▸ in progress);
+fill in the numbers from real output (scan.py and build_page.py print their
+own ⚔ summary boxes — let those show too, don't suppress them); never fake a
+number. After the final phase, close with the artifact link and one line:
 
 ```
 ⚔  The map awaits your judgment, Master.        <artifact link>
@@ -65,27 +68,37 @@ close with the artifact link and one line:
      skills (`~/.claude/plugins/cache/…`, overwritten on update → prefer a CLAUDE.md
      override and say so in the card).
 
-3. **Author cards** in `cards.json` (schema documented at the top of
-   `scripts/build_page.py`). One card per root cause, ordered by wait-time cost.
-   Each card: what happened (with the first-option % as evidence), a `cause` box
-   naming the exact file, and 1–2 fix **variants** with real unified-diff hunks.
-   Every variant needs a one-line `name` — it becomes the text of the decision the
-   user pastes back. Recommendations: never recommend removing destructive-command
-   deny rules (present the diff, recommend reject); never allowlist mutating MCP
-   tools or arbitrary code execution; mark plugin-cache patches as ephemeral.
+3. **Raise the map early, then author into it.** As soon as the trace names the
+   root causes, decide the trial count N and publish the assembling map:
+   - Write `cards.json` with `meta.range` and an empty `"cards": []`, then
+     `python3 scripts/build_page.py --scan interventions.json --cards cards.json --template assets/template.html --state authoring --total N --out map.html`
+     and publish `map.html` as an artifact NOW. The user gets a live page with
+     all stats, charts, and N shimmer-skeleton trials while you author.
+   - Author cards one at a time in `cards.json` (schema at the top of
+     `scripts/build_page.py`), ordered by wait-time cost. After each 1–2 cards:
+     rebuild with the same `--state authoring --total N` flags and **republish
+     the same artifact URL** — the skeletons flip to real trials in place.
+   - Each card: what happened (with the first-option % as evidence), a `cause`
+     box naming the exact file, and 1–2 fix **variants** with real unified-diff
+     hunks. Every variant needs a one-line `name` — it becomes the text of the
+     decision the user pastes back. Recommendations: never recommend removing
+     destructive-command deny rules (present the diff, recommend reject); never
+     allowlist mutating MCP tools or arbitrary code execution; mark
+     plugin-cache patches as ephemeral.
 
-4. **Build + publish**:
-   `python3 scripts/build_page.py --scan interventions.json --cards cards.json --template assets/template.html --out map.html`
-   then publish `map.html` as an artifact. The page (Claude-styled light theme)
-   has approve/reject stamps per fix, a variant chooser, wait-time totals, a
-   per-day rhythm chart, the five costliest single stops (exact durations,
-   deduped per dialog), per-project intervention rates, and a first-option
-   breakdown. Keyboard: J/K move between trials, A approve, R reject, V switch
-   variant; the bottom bar shows progress and the waiting time approvals would
-   reclaim, and a Claude-starburst padawan mascot levels up toward Jedi as
-   trials are decided (braid cut at the last one). `?fresh=1` gives a stateless
-   page for demo recordings; the Reset button clears saved decisions (decisions
-   are stored per audit date range).
+4. **Final build + publish**: rebuild with `--state complete` (drop
+   `--total`) and republish the same artifact URL — this removes the build
+   meter and unlocks the Transmit button. The page (Claude-styled light theme)
+   has a sticky sidebar rail (mascot, decided-count, section nav with per-trial
+   ✓/✕ marks), approve/reject stamps per fix, a variant chooser, wait-time
+   totals, a per-day rhythm chart, the five costliest single stops (exact
+   durations, deduped per dialog), per-project intervention rates, and a
+   first-option breakdown. Keyboard: J/K move between trials, A approve, R
+   reject, V switch variant; the bottom bar shows progress and the waiting time
+   approvals would reclaim, and the sidebar's Claude-starburst padawan levels
+   up toward Jedi as trials are decided (braid cut at the last one). `?fresh=1`
+   gives a stateless page for demo recordings; the Reset button clears saved
+   decisions (decisions are stored per audit date range).
 
 5. **Apply decisions.** The page's "Transmit decisions" button produces lines like
    `- APPROVE (variant A): <name> [fix-1A]` (block header: "Padawan-No-More decisions"). When the user pastes that block,
@@ -97,6 +110,9 @@ close with the artifact link and one line:
 - `--days N` — audit window (default 7)
 - `--cap SECONDS` on build_page.py — wait time above this counts as a walk-away
   and is capped in totals (default 1800)
+- `--state scanning|authoring|complete` + `--total N` on build_page.py —
+  non-complete states render skeleton trials for the cards not yet authored,
+  show a build meter in place of Transmit, and put the mascot in training
 
 ## Common mistakes
 

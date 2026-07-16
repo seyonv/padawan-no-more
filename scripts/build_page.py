@@ -33,6 +33,10 @@ ap.add_argument("--cards", required=True)
 ap.add_argument("--template", required=True)
 ap.add_argument("--out", default="map.html")
 ap.add_argument("--cap", type=int, default=1800, help="walk-away cap in seconds")
+ap.add_argument("--state", choices=["scanning", "authoring", "complete"], default="complete",
+                help="build state: non-complete renders skeleton trials and a build meter")
+ap.add_argument("--total", type=int, default=0,
+                help="total trials planned (skeletons rendered for the ones not yet in cards.json)")
 args = ap.parse_args()
 
 d = json.load(open(args.scan))
@@ -162,6 +166,7 @@ if info:
 DATA = {"meta": authored.get("meta", {"range": ""}), "projects": projects,
         "overall": dict(overall), "skillrows": skillrows, "wait": wait,
         "days": days, "topwaits": topwaits,
+        "build": {"state": args.state, "total": max(args.total, len(cards))},
         "cards": cards, "info": info,
         "totals": {"events": len(ev), "sessions": len(ss),
                    "sessions_hit": sum(1 for s in ss if s["interventions"] > 0),
@@ -189,7 +194,11 @@ for i, c in enumerate(cards):
     print(f"  {tick}   {'I' * 0}{['I', 'II', 'III', 'IV', 'V', 'VI'][i] if i < 6 else i + 1}. {c.get('title', c['id'])[:52]}{wait_s}")
 if fixable:
     print(f"  ├─ fixable waiting     ≈ {_fd(fixable)} reclaimed if approved")
-print(f"  └─ map raised          {args.out} ({len(out) // 1024} KB, {len(ev)} events)")
-print()
-print("  The map awaits your judgment, Master.")
+if args.state == "complete":
+    print(f"  └─ map raised          {args.out} ({len(out) // 1024} KB, {len(ev)} events)")
+    print()
+    print("  The map awaits your judgment, Master.")
+else:
+    total = max(args.total, len(cards))
+    print(f"  └─ map assembling      {args.out} — {len(cards)} of {total} trials aboard, republish as they land")
 print()
