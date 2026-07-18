@@ -6,3 +6,6 @@ interventions.json
 cards.json
 map.html
 demo-map.html
+
+# pre-launch marketing material — stays local
+docs/agent-one-prompt.md
