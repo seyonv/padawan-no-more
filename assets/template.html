@@ -1554,6 +1554,44 @@
     font-size: 11px;
     color: var(--ok);
   }
+  .demochip {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--warn);
+    background: var(--warn-bg);
+    border: 1px solid rgba(168, 123, 22, 0.3);
+    border-radius: 999px;
+    padding: 2px 9px;
+    margin-left: 10px;
+    vertical-align: 2px;
+  }
+  .sharebtn {
+    background: var(--ok-bg);
+    color: var(--ok);
+    border: 1px solid rgba(61, 139, 84, 0.35);
+    border-radius: 8px;
+    font-family: var(--display);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .sharebtn:hover {
+    background: rgba(61, 139, 84, 0.18);
+  }
+  .spanel {
+    max-width: 760px;
+  }
+  .spanel canvas {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line2);
+    border-radius: 10px;
+    display: block;
+  }
   @media (prefers-reduced-motion: reduce) {
     * {
       transition: none !important;
@@ -1706,12 +1744,30 @@
     <span class="spacer"></span>
     <button class="nextbtn" id="nextbtn">Next undecided ↓</button>
     <button class="copy" id="copybtn">Transmit decisions</button>
+    <button class="sharebtn" id="sharebtn" hidden>Share the verdict</button>
     <button class="ghost" id="resetbtn">Reset</button>
     <span class="hint"
       ><kbd>J</kbd>/<kbd>K</kbd> trials · <kbd>A</kbd> approve ·
       <kbd>R</kbd> reject · <kbd>V</kbd> variant — Transmit copies a block to
       paste into Claude Code; only approved fixes are applied.</span
     >
+  </div>
+</div>
+
+<div class="tmodal" id="smodal" hidden>
+  <div class="tpanel spanel">
+    <h3>The verdict card</h3>
+    <p class="tnote">
+      Rendered on your machine from this audit's numbers — nothing leaves it
+      until you post it.
+    </p>
+    <canvas id="scanvas" width="2400" height="1350"></canvas>
+    <div class="trow">
+      <button class="approve-btn" id="ssave">Save PNG</button>
+      <button id="scopy">Copy image</button>
+      <button id="sclose">Close</button>
+      <span class="tstat" id="sstat"></span>
+    </div>
   </div>
 </div>
 
@@ -1770,6 +1826,11 @@
     ] || n;
 
   $("#range").textContent = DATA.meta.range;
+  if (DATA.demo)
+    $(".eyebrow").insertAdjacentHTML(
+      "beforeend",
+      `<span class="demochip">training simulation — example data</span>`,
+    );
   $("#hcount").textContent = T.events;
   $("#bigwait").textContent = fdur(W.capped);
   $("#capnote").textContent = W.over_cap
@@ -2166,6 +2227,7 @@
       mark.classList.toggle("no", v === "reject");
     });
     $("#nextbtn").style.visibility = done < FIXES.length ? "visible" : "hidden";
+    $("#sharebtn").hidden = !(FIXES.length && done === FIXES.length);
     updateMascot(done, FIXES.length);
   }
   function setFocus(i, scroll) {
@@ -2214,6 +2276,10 @@
     if (t === "TEXTAREA" || t === "INPUT") return;
     if (!$("#tmodal").hidden) {
       if (e.key === "Escape") $("#tmodal").hidden = true;
+      return;
+    }
+    if (!$("#smodal").hidden) {
+      if (e.key === "Escape") $("#smodal").hidden = true;
       return;
     }
     const k = e.key.toLowerCase();
@@ -2336,6 +2402,152 @@
   };
   $("#tmodal").addEventListener("click", (e) => {
     if (e.target.id === "tmodal") $("#tmodal").hidden = true;
+  });
+
+  /* ---------- the verdict card: a shareable PNG, rendered locally ---------- */
+  // Set once the repo is public — this line is the card's only self-promotion.
+  const INSTALL = "npx skills add seyonv/padawan-no-more";
+  function knightedMascotSVG(w) {
+    return mascotSVG("sc", w)
+      .replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')
+      .replaceAll('style="display:none"', "")
+      .replace('<g id="sc-braid">', '<g id="sc-braid" style="display:none">');
+  }
+  function drawCard(img) {
+    const cv = $("#scanvas"),
+      ctx = cv.getContext("2d");
+    const CW = 1200,
+      CH = 675;
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.clearRect(0, 0, CW, CH);
+    ctx.fillStyle = "#faf9f5";
+    ctx.fillRect(0, 0, CW, CH);
+    // glow behind the mascot
+    const gx = 950,
+      gy = 330;
+    const glow = ctx.createRadialGradient(gx, gy, 40, gx, gy, 300);
+    glow.addColorStop(0, "rgba(63,174,104,.16)");
+    glow.addColorStop(1, "rgba(63,174,104,0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.strokeStyle = "#d5d2c5";
+    ctx.strokeRect(14.5, 14.5, CW - 29, CH - 29);
+    if (img) {
+      const mw = 330,
+        mh = Math.round((mw * 164) / 150);
+      ctx.drawImage(img, gx - mw / 2, gy - mh / 2 + 14, mw, mh);
+      ctx.fillStyle = "#9a988f";
+      ctx.font = '11px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+      ctx.textAlign = "center";
+      ctx.letterSpacing = "3px";
+      ctx.fillText("PADAWAN NO MORE", gx, gy + mh / 2 + 44);
+      ctx.letterSpacing = "0px";
+      ctx.textAlign = "left";
+    }
+    const L = 72; // left margin
+    ctx.fillStyle = "#c96442";
+    ctx.font = '12px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+    ctx.letterSpacing = "3px";
+    ctx.fillText(
+      "⚔  THE JEDI TRIALS · " + (DATA.meta.range || "").toUpperCase(),
+      L,
+      92,
+    );
+    ctx.letterSpacing = "0px";
+    const serif =
+      '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
+    ctx.fillStyle = "#141413";
+    ctx.font = "600 84px " + serif;
+    ctx.fillText("My Claude stopped to", L, 205);
+    ctx.fillText("ask me ", L, 300);
+    const w1 = ctx.measureText("ask me ").width;
+    ctx.fillStyle = "#c96442";
+    ctx.fillText(T.events + " times.", L + w1, 300);
+    ctx.fillStyle = "#5e5d59";
+    ctx.font = "26px " + serif;
+    ctx.fillText(fdur(W.capped) + " spent waiting on my answers.", L, 372);
+    const firstPct = pct(O.first || 0, answered);
+    if (firstPct)
+      ctx.fillText(
+        firstPct + "% of my answers took the option it recommended.",
+        L,
+        414,
+      );
+    const reclaimed = FIXES.reduce(
+      (a, id) =>
+        a +
+        ((st[id] || {}).v === "approve"
+          ? CARDS.find((c) => c.id === id).wait || 0
+          : 0),
+      0,
+    );
+    const approved = FIXES.filter(
+      (id) => (st[id] || {}).v === "approve",
+    ).length;
+    ctx.fillStyle = "#3d8b54";
+    ctx.font = "600 30px " + serif;
+    const kline = approved
+      ? "Knighted — " +
+        approved +
+        " fix" +
+        (approved > 1 ? "es" : "") +
+        " approved, ≈ " +
+        fdur(reclaimed) +
+        " a week reclaimed."
+      : "Knighted — the trials are decided.";
+    // keep clear of the mascot's column
+    if (ctx.measureText(kline).width > 690) ctx.font = "600 26px " + serif;
+    ctx.fillText(kline, L, 500);
+    ctx.fillStyle = "#9a988f";
+    ctx.font = '15px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+    ctx.fillText(INSTALL, L, 606);
+  }
+  function openShare() {
+    $("#sstat").textContent = "";
+    $("#smodal").hidden = false;
+    drawCard(null);
+    const svg = knightedMascotSVG(330);
+    const url = URL.createObjectURL(
+      new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
+    );
+    const img = new Image();
+    img.onload = () => {
+      drawCard(img);
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
+  }
+  $("#sharebtn").onclick = openShare;
+  $("#ssave").onclick = () => {
+    const a = document.createElement("a");
+    a.download =
+      "padawan-no-more-" +
+      (DATA.meta.range || "verdict").replace(/\W+/g, "-") +
+      ".png";
+    a.href = $("#scanvas").toDataURL("image/png");
+    a.click();
+    $("#sstat").textContent = "Saved ✓";
+  };
+  $("#scopy").onclick = () => {
+    $("#scanvas").toBlob((blob) => {
+      if (blob && navigator.clipboard && window.ClipboardItem) {
+        navigator.clipboard
+          .write([new ClipboardItem({ "image/png": blob })])
+          .then(
+            () => ($("#sstat").textContent = "Copied ✓ — paste it anywhere."),
+          )
+          .catch(
+            () => ($("#sstat").textContent = "Copy blocked — use Save PNG."),
+          );
+      } else $("#sstat").textContent = "Copy unsupported here — use Save PNG.";
+    });
+  };
+  $("#sclose").onclick = () => {
+    $("#smodal").hidden = true;
+  };
+  $("#smodal").addEventListener("click", (e) => {
+    if (e.target.id === "smodal") $("#smodal").hidden = true;
   });
 
   /* ---------- the bubble cycles Claude's real logged questions ---------- */
