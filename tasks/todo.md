@@ -34,3 +34,28 @@ errors:
 - [x] Scanning state: "tracing each cause" placeholder, pulsing live dot
 - [x] SKILL.md: local-first flow — open map.html seconds after scan, rebuild per card, artifact optional at end
 - [x] Verified: scanning→authoring→complete transitions live-update an open tab; transmission text carries verbatim diffs
+
+# Launch P0s — 2026-07-18
+
+- [x] Verdict share card: canvas→PNG on knighted state (stops, wait, first-option %, reclaimed, mascot, install line)
+- [x] Demo mode: examples/interventions.example.json (102 events, 5-trial cards.example.json), build_page --demo chip, scan.py sparse-archives hint
+- [x] Marketplace manifests: .claude-plugin/plugin.json + marketplace.json (root SKILL.md works for clone, plugin, and npx skills add)
+- [x] SKILL.md: share-card note, demo-mode section, --demo flag doc
+- [x] README: install moved above How-it-works, npx/plugin/clone install paths, share-card + training-simulation notes
+- [x] Publish prep: GitHub handle (seyonv) filled into README, .claude-plugin/\*.json, and the INSTALL const in assets/template.html
+
+## Review
+
+Verified in headless Chromium against the training-simulation dataset
+(102 events, 5 trials), zero console errors:
+
+- Deciding all five trials (4 approve, 1 reject) knights the mascot and
+  reveals "Share the verdict" in the bottom bar; hidden until then.
+- Card canvas (2400×1350, drawn at 2x): "My Claude stopped to ask me 102
+  times.", "4h 15m spent waiting", "68% took the option it recommended",
+  "Knighted — 4 fixes approved, ≈ 3h 38m a week reclaimed.", knighted
+  mascot (blade lit, braid gone), install line. toDataURL export confirmed
+  untainted (1.7 MB PNG). Caught + fixed: local canvas const W shadowed
+  DATA.wait's W, blanking the wait line.
+- --demo renders the "training simulation — example data" chip; absent on
+  normal builds.

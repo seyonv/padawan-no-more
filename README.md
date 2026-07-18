@@ -18,6 +18,46 @@ what you approved. Each week, your padawan needs you a little less.
 
 ![The Trials map](docs/screenshots/trials-map.png)
 
+## Install
+
+One command, pick your flavor:
+
+```bash
+npx skills add seyonv/padawan-no-more
+```
+
+or as a Claude Code plugin:
+
+```
+/plugin marketplace add seyonv/padawan-no-more
+/plugin install padawan-no-more@padawan-no-more
+```
+
+or the classic way:
+
+```bash
+git clone https://github.com/seyonv/padawan-no-more ~/.claude/skills/padawan-no-more
+```
+
+Pick **one** — each method installs a full copy, and two copies means Claude
+sees the skill twice.
+
+## Run it
+
+> Run /padawan-no-more on my last week of conversations.
+
+Or in your own words — the skill triggers on things like:
+
+> How often did you need me this week? You're not a padawan anymore — audit it
+> and show me what to change.
+
+Claude scans your transcripts, investigates the causes, builds the Trials map,
+and hands you a link. Stamp, transmit, paste — done.
+
+**Light week?** If the scan finds too few stops to be interesting, ask for the
+**training simulation** — a full map built from bundled example data, clearly
+stamped as such — or widen the window ("audit the last 30 days").
+
 ## How it works — three stamps and you're done
 
 1. **Read each trial** — one card per root cause, costliest first, with the
@@ -33,6 +73,10 @@ blade ignites and the braid is cut.
 
 ![Knighted — padawan no more](docs/screenshots/knighted.png)
 
+When the last trial is decided, **Share the verdict** appears: a PNG card with
+your week's numbers — stops, hours waiting, first-option rate, time reclaimed —
+rendered entirely on your machine. Save it, post it, flex it.
+
 ## What the Trials reveal
 
 | Signal                   | What you learn                                                                                                                                                                            |
@@ -44,26 +88,6 @@ blade ignites and the braid is cut.
 | **What NOT to fix**      | It recommends _keeping_ destructive-command guardrails. A Jedi craves not `rm -rf`.                                                                                                       |
 
 ![A trial card with its fix diff](docs/screenshots/trial-card.png)
-
-## Install
-
-```bash
-git clone https://github.com/YOURUSER/padawan-no-more ~/.claude/skills/padawan-no-more
-```
-
-That's it. Claude Code picks up skills in `~/.claude/skills/` automatically.
-
-## Run it
-
-> Run /padawan-no-more on my last week of conversations.
-
-Or in your own words — the skill triggers on things like:
-
-> How often did you need me this week? You're not a padawan anymore — audit it
-> and show me what to change.
-
-Claude scans your transcripts, investigates the causes, builds the Trials map,
-and hands you a link. Stamp, transmit, paste — done.
 
 ## Configuration
 

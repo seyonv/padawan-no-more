@@ -115,7 +115,10 @@ narration, not the main show. After the final phase, close with one line:
    approvals would reclaim, and the sidebar's Claude-starburst padawan levels
    up toward Jedi as trials are decided (braid cut at the last one). `?fresh=1`
    gives a stateless page for demo recordings; the Reset button clears saved
-   decisions (decisions are stored per audit date range).
+   decisions (decisions are stored per audit date range). When the last trial
+   is decided, a **Share the verdict** button appears in the bottom bar — it
+   renders a PNG card (stops, waiting time, first-option rate, time reclaimed)
+   on a local canvas the user can save or copy; nothing is uploaded.
 
 5. **Apply decisions.** The page's "Transmit decisions" button produces a
    self-contained block (header: "Padawan-No-More decisions") that carries the
@@ -125,11 +128,31 @@ narration, not the main show. After the final phase, close with one line:
    hunk no longer matches the target file, stop and show the conflict instead
    of improvising; confirm each file touched.
 
+## Demo mode (training simulation)
+
+If the scan finds fewer than 15 interventions (scan.py prints a hint when so),
+the map will be thin and the first-run experience poor. Tell the user, then
+offer two options: widen the window (`--days 30`), or run the training
+simulation — build straight from the bundled example data, skipping the trace
+and authoring phases:
+
+```
+python3 scripts/build_page.py --scan examples/interventions.example.json \
+    --cards examples/cards.example.json --template assets/template.html \
+    --demo --out map.html
+```
+
+`--demo` stamps the page with a "training simulation — example data" chip.
+Never present simulation numbers as the user's own audit, and never apply the
+example cards' diffs — the transmission from a demo page is for looking at,
+not for pasting.
+
 ## Configuration
 
 - `--days N` — audit window (default 7)
 - `--cap SECONDS` on build_page.py — wait time above this counts as a walk-away
   and is capped in totals (default 1800)
+- `--demo` on build_page.py — marks the page as a training simulation (see above)
 - `--state scanning|authoring|complete` + `--total N` on build_page.py —
   non-complete states render skeleton trials for the cards not yet authored,
   show a build meter in place of Transmit, put the mascot in training, and

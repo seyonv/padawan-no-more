@@ -1,0 +1,16 @@
+{
+  "name": "padawan-no-more",
+  "version": "1.0.0",
+  "description": "Audit every point where Claude Code stopped for your input, trace each stop to the config that caused it, and approve ready-to-apply fixes. Run the Jedi Trials. Knight it.",
+  "author": { "name": "Seyon Vasantharajan" },
+  "homepage": "https://github.com/seyonv/padawan-no-more",
+  "repository": "https://github.com/seyonv/padawan-no-more",
+  "license": "MIT",
+  "keywords": [
+    "autonomy",
+    "permissions",
+    "audit",
+    "interruptions",
+    "askuserquestion"
+  ]
+}
