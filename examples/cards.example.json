@@ -3,20 +3,21 @@
   "cards": [
     {
       "id": "fix-1",
-      "title": "my-review-skill’s blocking question gates",
+      "title": "my-review-skill: blocking question gates you rubber-stamp",
       "rec": ["rec-yes", "Recommend: approve · variant A"],
       "rowlabel": "review dialogs",
+      "count": "48 dialogs",
       "filter": { "type": "ask_question", "skill": "my-review-skill" },
-      "body": "<p><b>88% of answers took the recommended option</b> — the gate is ceremony.</p><div class=\"cause\"><b>Config responsible:</b> <code>~/.claude/skills/my-review-skill/SKILL.md</code></div>",
+      "body": "<p>The loudest gate this week: <b>48 dialogs</b>, and <b>88% of answers took the recommended option</b> — that is ceremony, not signal.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/skills/my-review-skill/SKILL.md</code> — user-owned, safely patchable. The literal gate: \"STOP. Ask the user before continuing.\"</div>",
       "variants": [
         {
           "k": "A",
-          "label": "Patch the skill: add AUTOPILOT mode",
+          "label": "Full auto: decide + log, one batch question at the end",
           "star": true,
           "name": "Patch ~/.claude/skills/my-review-skill/SKILL.md: gates become decide-and-log",
           "diff": {
             "file": "~/.claude/skills/my-review-skill/SKILL.md",
-            "note": "Keeps the review, removes the blocking.",
+            "note": "Keeps every review section; removes the blocking.",
             "hunks": [
               {
                 "h": "@@ the gate @@",
@@ -24,7 +25,178 @@
                   ["del", "STOP. Ask the user before continuing."],
                   [
                     "add",
-                    "In AUTOPILOT (user away): adopt your recommendation, log it, continue."
+                    "Adopt your recommendation, log it in the Decision Log, and continue."
+                  ],
+                  [
+                    "add",
+                    "Ask ONE batched question at the end carrying the log plus any genuine coin-flips."
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "k": "B",
+          "label": "Milder: keep the first gate, auto-decide the rest",
+          "name": "Patch my-review-skill: keep the opening scope question, auto-decide sections",
+          "diff": {
+            "file": "~/.claude/skills/my-review-skill/SKILL.md",
+            "note": "One stop per review instead of four.",
+            "hunks": [
+              {
+                "h": "@@ section gates @@",
+                "lines": [
+                  [
+                    "ctx",
+                    "STOP. Ask the user before continuing.  (scope question — kept)"
+                  ],
+                  [
+                    "del",
+                    "After each section: STOP. Ask the user before continuing."
+                  ],
+                  [
+                    "add",
+                    "After each section: apply the recommendation and note it in the Decision Log."
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "fix-2",
+      "title": "brainstorming: real answers — batch it, don't silence it",
+      "rec": ["rec-care", "Recommend: approve — batching, not removal"],
+      "rowlabel": "brainstorming dialogs",
+      "count": "20 dialogs",
+      "filter": {
+        "type": "ask_question",
+        "skill": "superpowers:brainstorming"
+      },
+      "body": "<p><b>13 of 20 answers were free-text</b> — these questions extract real direction. Removing them loses signal; the cost is that each one blocks alone.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/plugins/cache/…/superpowers/brainstorming/SKILL.md</code> — plugin cache, overwritten on update. A CLAUDE.md override is the durable lever.</div>",
+      "variants": [
+        {
+          "k": "A",
+          "label": "CLAUDE.md override: batch questions, never one at a time",
+          "star": true,
+          "name": "Add a CLAUDE.md rule: brainstorming questions arrive in one batch",
+          "diff": {
+            "file": "~/.claude/CLAUDE.md",
+            "note": "Durable across plugin updates; keeps every question.",
+            "hunks": [
+              {
+                "h": "@@ ## Workflow @@",
+                "lines": [
+                  ["ctx", "## Workflow"],
+                  [
+                    "add",
+                    "- During brainstorming, collect clarifying questions and ask them in ONE"
+                  ],
+                  [
+                    "add",
+                    "  batched AskUserQuestion, not one dialog per question."
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "fix-3",
+      "title": "Read-only commands tripping permission prompts",
+      "rec": ["rec-yes", "Recommend: approve · variant A"],
+      "rowlabel": "denials",
+      "filter": { "type": "denial" },
+      "body": "<p>Six blocked commands this week — five were read-only (<code>gh pr list</code>, <code>docker compose logs</code>…). Each one stopped the mission for a permission you'd always grant.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/settings.json</code> — no allow rules for read-only tooling.</div>",
+      "variants": [
+        {
+          "k": "A",
+          "label": "Allowlist the read-only commands",
+          "star": true,
+          "name": "settings.json: allow gh (read), docker logs, npm run build",
+          "diff": {
+            "file": "~/.claude/settings.json",
+            "note": "Read-only additions only — rm/rf stays denied.",
+            "hunks": [
+              {
+                "h": "@@ \"permissions\": { \"allow\": [ @@",
+                "lines": [
+                  ["ctx", "  \"permissions\": {"],
+                  ["ctx", "    \"allow\": ["],
+                  ["add", "      \"Bash(gh pr list:*)\","],
+                  ["add", "      \"Bash(gh api repos/*)\","],
+                  ["add", "      \"Bash(docker compose logs:*)\","],
+                  ["add", "      \"Bash(npm run build)\","]
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "fix-4",
+      "title": "The rm -rf deny rule: a Jedi craves not this power",
+      "rec": ["rec-no", "Recommend: REJECT — keep the guardrail"],
+      "count": "1 deny rule",
+      "body": "<p>Removing this rule would silence one stop a week. It would also let a confused agent delete a build tree — or worse. <b>The diff is shown for completeness; reject it.</b></p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/settings.json</code> — <code>permissions.deny: Bash(rm -rf:*)</code>. Working as intended.</div>",
+      "variants": [
+        {
+          "k": "A",
+          "label": "Remove the rm -rf deny rule (don't)",
+          "name": "settings.json: remove the rm -rf deny rule",
+          "diff": {
+            "file": "~/.claude/settings.json",
+            "note": "Shown so the choice is yours. Recommendation: reject.",
+            "hunks": [
+              {
+                "h": "@@ \"deny\": [ @@",
+                "lines": [
+                  ["ctx", "    \"deny\": ["],
+                  ["del", "      \"Bash(rm -rf:*)\","]
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "fix-5",
+      "title": "Plan approvals: 7 of 8 approved unchanged",
+      "rec": ["rec-yes", "Recommend: approve · variant A"],
+      "rowlabel": "plan approvals",
+      "filter": { "type": "plan_approval" },
+      "body": "<p>Eight plan gates this week; <b>seven approved without an edit</b>. The plans are good — the gate mostly certifies that.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/CLAUDE.md</code> — \"Enter plan mode for ANY non-trivial task\" routes even small tasks through an approval stop.</div>",
+      "variants": [
+        {
+          "k": "A",
+          "label": "Scope plan mode to genuinely large tasks",
+          "star": true,
+          "name": "CLAUDE.md: plan mode for architectural tasks only",
+          "diff": {
+            "file": "~/.claude/CLAUDE.md",
+            "note": "Small tasks proceed; big ones still get the gate.",
+            "hunks": [
+              {
+                "h": "@@ ## Workflow @@",
+                "lines": [
+                  [
+                    "del",
+                    "- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)."
+                  ],
+                  [
+                    "add",
+                    "- Enter plan mode for architectural decisions or changes touching 5+ files;"
+                  ],
+                  [
+                    "add",
+                    "  for smaller tasks, state the approach in one line and proceed."
                   ]
                 ]
               }
@@ -37,7 +209,7 @@
   "info": {
     "title": "Interruptions",
     "rowlabel": "interruptions",
-    "filter": { "types": ["interruption"] },
-    "body": "<p>Escape presses are you steering — no config causes or removes them.</p>"
+    "filter": { "types": ["interruption", "ask_rejected"] },
+    "body": "<p>Escape presses and dismissed dialogs are you steering — no config causes them, and none should remove them.</p>"
   }
 }

@@ -188,4 +188,10 @@ if nq:
 if top:
     print(f"  ├─ loudest gate        {top[0][0]} ({top[0][1]} dialogs)")
 print(f"  └─ wrote               {args.out}")
+if len(events) < 15:
+    print()
+    print("  Sparse archives — fewer than 15 stops in this window. The map will be thin;")
+    print("  consider a wider window (--days 30) or the training simulation:")
+    print("  build_page.py --scan examples/interventions.example.json "
+          "--cards examples/cards.example.json --demo")
 print()

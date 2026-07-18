@@ -37,6 +37,8 @@ ap.add_argument("--state", choices=["scanning", "authoring", "complete"], defaul
                 help="build state: non-complete renders skeleton trials and a build meter")
 ap.add_argument("--total", type=int, default=0,
                 help="total trials planned (skeletons rendered for the ones not yet in cards.json)")
+ap.add_argument("--demo", action="store_true",
+                help="mark the page as a training simulation built from example data")
 args = ap.parse_args()
 
 d = json.load(open(args.scan))
@@ -167,6 +169,7 @@ DATA = {"meta": authored.get("meta", {"range": ""}), "projects": projects,
         "overall": dict(overall), "skillrows": skillrows, "wait": wait,
         "days": days, "topwaits": topwaits,
         "build": {"state": args.state, "total": max(args.total, len(cards))},
+        "demo": args.demo,
         "cards": cards, "info": info,
         "totals": {"events": len(ev), "sessions": len(ss),
                    "sessions_hit": sum(1 for s in ss if s["interventions"] > 0),
