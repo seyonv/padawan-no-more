@@ -1,14 +1,19 @@
 {
-  "meta": { "range": "Jul 5 – 12, 2026" },
+  "meta": {
+    "range": "Jul 5 \u2013 12, 2026"
+  },
   "cards": [
     {
       "id": "fix-1",
       "title": "my-review-skill: blocking question gates you rubber-stamp",
-      "rec": ["rec-yes", "Recommend: approve · variant A"],
+      "rec": ["rec-yes", "Recommend: approve \u00b7 variant A"],
       "rowlabel": "review dialogs",
       "count": "48 dialogs",
-      "filter": { "type": "ask_question", "skill": "my-review-skill" },
-      "body": "<p>The loudest gate this week: <b>48 dialogs</b>, and <b>88% of answers took the recommended option</b> — that is ceremony, not signal.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/skills/my-review-skill/SKILL.md</code> — user-owned, safely patchable. The literal gate: \"STOP. Ask the user before continuing.\"</div>",
+      "filter": {
+        "type": "ask_question",
+        "skill": "my-review-skill"
+      },
+      "body": "<p>The loudest gate this week: <b>48 dialogs</b>, and <b>88% of answers took the recommended option</b> \u2014 that is ceremony, not signal.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/skills/my-review-skill/SKILL.md</code> \u2014 user-owned, safely patchable. The literal gate: \"STOP. Ask the user before continuing.\"</div>",
       "variants": [
         {
           "k": "A",
@@ -49,7 +54,7 @@
                 "lines": [
                   [
                     "ctx",
-                    "STOP. Ask the user before continuing.  (scope question — kept)"
+                    "STOP. Ask the user before continuing.  (scope question \u2014 kept)"
                   ],
                   [
                     "del",
@@ -68,15 +73,15 @@
     },
     {
       "id": "fix-2",
-      "title": "brainstorming: real answers — batch it, don't silence it",
-      "rec": ["rec-care", "Recommend: approve — batching, not removal"],
+      "title": "brainstorming: real answers \u2014 batch it, don't silence it",
+      "rec": ["rec-care", "Recommend: approve \u2014 batching, not removal"],
       "rowlabel": "brainstorming dialogs",
       "count": "20 dialogs",
       "filter": {
         "type": "ask_question",
         "skill": "superpowers:brainstorming"
       },
-      "body": "<p><b>13 of 20 answers were free-text</b> — these questions extract real direction. Removing them loses signal; the cost is that each one blocks alone.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/plugins/cache/…/superpowers/brainstorming/SKILL.md</code> — plugin cache, overwritten on update. A CLAUDE.md override is the durable lever.</div>",
+      "body": "<p><b>13 of 20 answers were free-text</b> \u2014 these questions extract real direction. Removing them loses signal; the cost is that each one blocks alone.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/plugins/cache/\u2026/superpowers/brainstorming/SKILL.md</code> \u2014 plugin cache, overwritten on update. A CLAUDE.md override is the durable lever.</div>",
       "variants": [
         {
           "k": "A",
@@ -109,10 +114,12 @@
     {
       "id": "fix-3",
       "title": "Read-only commands tripping permission prompts",
-      "rec": ["rec-yes", "Recommend: approve · variant A"],
+      "rec": ["rec-yes", "Recommend: approve \u00b7 variant A"],
       "rowlabel": "denials",
-      "filter": { "type": "denial" },
-      "body": "<p>Six blocked commands this week — five were read-only (<code>gh pr list</code>, <code>docker compose logs</code>…). Each one stopped the mission for a permission you'd always grant.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/settings.json</code> — no allow rules for read-only tooling.</div>",
+      "filter": {
+        "type": "denial"
+      },
+      "body": "<p>Six blocked commands this week \u2014 five were read-only (<code>gh pr list</code>, <code>docker compose logs</code>\u2026). Each one stopped the mission for a permission you'd always grant.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/settings.json</code> \u2014 no allow rules for read-only tooling.</div>",
       "variants": [
         {
           "k": "A",
@@ -121,7 +128,7 @@
           "name": "settings.json: allow gh (read), docker logs, npm run build",
           "diff": {
             "file": "~/.claude/settings.json",
-            "note": "Read-only additions only — rm/rf stays denied.",
+            "note": "Read-only additions only \u2014 rm/rf stays denied.",
             "hunks": [
               {
                 "h": "@@ \"permissions\": { \"allow\": [ @@",
@@ -142,9 +149,9 @@
     {
       "id": "fix-4",
       "title": "The rm -rf deny rule: a Jedi craves not this power",
-      "rec": ["rec-no", "Recommend: REJECT — keep the guardrail"],
+      "rec": ["rec-no", "Recommend: REJECT \u2014 keep the guardrail"],
       "count": "1 deny rule",
-      "body": "<p>Removing this rule would silence one stop a week. It would also let a confused agent delete a build tree — or worse. <b>The diff is shown for completeness; reject it.</b></p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/settings.json</code> — <code>permissions.deny: Bash(rm -rf:*)</code>. Working as intended.</div>",
+      "body": "<p>Removing this rule would silence one stop a week. It would also let a confused agent delete a build tree \u2014 or worse. <b>The diff is shown for completeness; reject it.</b></p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/settings.json</code> \u2014 <code>permissions.deny: Bash(rm -rf:*)</code>. Working as intended.</div>",
       "variants": [
         {
           "k": "A",
@@ -169,10 +176,12 @@
     {
       "id": "fix-5",
       "title": "Plan approvals: 7 of 8 approved unchanged",
-      "rec": ["rec-yes", "Recommend: approve · variant A"],
+      "rec": ["rec-yes", "Recommend: approve \u00b7 variant A"],
       "rowlabel": "plan approvals",
-      "filter": { "type": "plan_approval" },
-      "body": "<p>Eight plan gates this week; <b>seven approved without an edit</b>. The plans are good — the gate mostly certifies that.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/CLAUDE.md</code> — \"Enter plan mode for ANY non-trivial task\" routes even small tasks through an approval stop.</div>",
+      "filter": {
+        "type": "plan_approval"
+      },
+      "body": "<p>Eight plan gates this week; <b>seven approved without an edit</b>. The plans are good \u2014 the gate mostly certifies that.</p><div class=\"cause\"><b>Cause:</b> <code>~/.claude/CLAUDE.md</code> \u2014 \"Enter plan mode for ANY non-trivial task\" routes even small tasks through an approval stop.</div>",
       "variants": [
         {
           "k": "A",
@@ -204,12 +213,63 @@
           }
         }
       ]
+    },
+    {
+      "id": "fix-6",
+      "title": "Prompts you approve on every commit",
+      "rec": ["rec-yes", "Allow the exact command"],
+      "body": "<p>You approved <strong>8 mutating prompts</strong> this week that no allow-rule covered \u2014 <code>npm test</code>, <code>git commit</code>, <code>git push origin main</code>. These are inferred (the transcript logs denials, not approvals), so treat the count as a floor.</p><div class=\"cause\">No <code>permissions.allow</code> entry in <code>~/.claude/settings.json</code> covers these commands, so each first use in a session prompts.</div>",
+      "rowlabel": "approved prompts",
+      "count": "8 approvals",
+      "filter": {
+        "type": "approval"
+      },
+      "variants": [
+        {
+          "k": "A",
+          "label": "Allow git commit narrowly",
+          "star": true,
+          "name": "allow Bash(git commit *) globally",
+          "diff": {
+            "file": "~/.claude/settings.json",
+            "note": "Global scope \u2014 stops the commit prompt in every project.",
+            "hunks": [
+              {
+                "h": "@@ permissions.allow @@",
+                "lines": [
+                  ["ctx", "    \"Bash(git status)\","],
+                  ["add", "    \"Bash(git commit *)\","],
+                  ["add", "    \"Bash(npm test *)\","],
+                  ["ctx", "    \"Read\""]
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "k": "B",
+          "label": "Allow all Bash (not recommended)",
+          "name": "allow Bash(*) \u2014 broad, hands over the keys",
+          "diff": {
+            "file": "~/.claude/settings.json",
+            "note": "Broad \u2014 silences every prompt but removes the guardrail. Reject unless you trust every session.",
+            "hunks": [
+              {
+                "h": "@@ permissions.allow @@",
+                "lines": [["add", "    \"Bash(*)\","]]
+              }
+            ]
+          }
+        }
+      ]
     }
   ],
   "info": {
     "title": "Interruptions",
     "rowlabel": "interruptions",
-    "filter": { "types": ["interruption", "ask_rejected"] },
-    "body": "<p>Escape presses and dismissed dialogs are you steering — no config causes them, and none should remove them.</p>"
+    "filter": {
+      "types": ["interruption", "ask_rejected"]
+    },
+    "body": "<p>Escape presses and dismissed dialogs are you steering \u2014 no config causes them, and none should remove them.</p>"
   }
 }

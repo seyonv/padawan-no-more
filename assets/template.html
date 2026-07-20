@@ -1973,7 +1973,7 @@
   $("#cards").innerHTML = CARDS.map(
     (c, i) => `
 <div class="card" id="${c.id}">
- <div class="chead"><span class="trialnum">Trial ${ROMAN(i + 1)}</span><h3>${c.title}</h3>
+ <div class="chead"><span class="trialnum">Trial ${ROMAN(i + 1)}</span><h3>${esc(c.title)}</h3>
   <span class="count">${esc(c.count)}</span>
   ${c.wait ? `<span class="waitchip" title="waiting time this cost you (30-min capped)">⏱ ${fdur(c.wait)}</span>` : ""}
   <span class="pill ${c.rec[0]}">${esc(c.rec[1])}</span></div>
@@ -2026,7 +2026,7 @@
 </svg>`;
   const INFO = DATA.info;
   $("#infocard").innerHTML = INFO
-    ? `<div class="chead"><h3>${INFO.title}</h3>
+    ? `<div class="chead"><h3>${esc(INFO.title)}</h3>
  <span class="count">${esc(INFO.count)}</span><span class="pill rec-info">${esc(INFO.pill || "No config — human judgment")}</span></div>
  <div class="cbody"><div class="sagewrap"><span class="sage">${SVG_SAGE}</span>
  <div class="maxim"><div class="mq">"Approve, or approve not.<br>There is no 'ask again later.'"</div>
@@ -2123,7 +2123,21 @@
    (nothing is persisted in that mode), or hit Reset in the bottom bar.
    Decisions are scoped to this audit's date range so old audits don't bleed in. */
   const FRESH = new URLSearchParams(location.search).has("fresh");
-  const KEY = "padawan-no-more::" + (DATA.meta.range || "default");
+  /* scope decisions to the exact card set, not just the date range: two audits
+     of the same week reuse ids (fix-1, fix-2…), so range alone would paint one
+     audit's verdicts onto another's trials. */
+  const _sig = (DATA.cards || [])
+    .map((c) => c.id + "|" + (c.title || ""))
+    .join("§");
+  let _h = 0;
+  for (let i = 0; i < _sig.length; i++) {
+    _h = (_h * 31 + _sig.charCodeAt(i)) | 0;
+  }
+  const KEY =
+    "padawan-no-more::" +
+    (DATA.meta.range || "default") +
+    "::" +
+    (_h >>> 0).toString(36);
   let st = {};
   if (!FRESH) {
     try {

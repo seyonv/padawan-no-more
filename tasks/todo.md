@@ -16,9 +16,129 @@ robustness, SKILL.md prompt behavior, fresh-user experience), then fix what brea
 - [ ] 5. Triage findings, fix, verify
 - [ ] 6. Review section below
 
-## Review
+## Triage (from 5 adversarial agents)
 
-(pending)
+### P0 — accuracy (scan.py; numbers are the product)
+
+- [ ] Wait inflated ~5x: console prints UNCAPPED sum; each Q in a multi-Q dialog
+      carries full dialog wait; resumed sessions duplicate events across files
+- [ ] 37.5% of denials are false positives (result merely _contains_ "has been
+      denied"/"doesn't want to proceed" — file dumps of scan output)
+- [ ] Freetext overstated 33%: answers with `" selected preview:` suffix don't
+      match option label → misclassified (skews the core ceremony metric)
+- [ ] One Escape = 2 interventions (interruption "for tool use" dups a denial/dismiss)
+- [ ] /model and /clear captured as "skills" (12% of asks mislabeled)
+- [ ] Format-drift → silent zeros (no detection); add sanity warning
+- [ ] Sidechain guard (latent; one-line isSidechain skip)
+
+### P0 — security/robustness (build_page.py + template)
+
+- [ ] Stored XSS: `</script>` in transcript text breaks out of the DATA script
+- [ ] ZeroDivisionError crash when an event's project has no session record
+
+### P0 — apply-time safety (SKILL.md step 5)
+
+- [ ] Pasted transmission applied verbatim: deny-rule removal, network allowlist,
+      smuggled `curl|sh` into CLAUDE.md all sail through. Re-screen + preview gate.
+
+### P1 — SKILL.md wording / UX
+
+- [ ] Working-dir rule (outputs = personal transcript data; must not litter
+      user's repo). Absolute skill-dir paths for scripts/assets/examples
+- [ ] Sparse-check must gate the "open page immediately" step
+- [ ] Demo mode vs mission-log contradiction; add failure state to log
+- [ ] meta.range derivation; cross-platform open (xdg-open/wslview)
+- [ ] Note the approved-prompt blind spot on the map (transcripts don't record approvals)
+
+### P2 — template polish
+
+- [ ] localStorage KEY collision across same-range audits; esc() card titles
+
+### Deferred (recommend, not doing now)
+
+- apply.py checked applier; consequence-weighting of the 80% heuristic;
+  plugin `skills/` layout round-trip verification
+
+## Review — 2026-07-20
+
+Ran 5 adversarial agents (parser correctness, page robustness, transmission
+red-team, demo/sparse integrity, fresh-eyes value) + 2 verification agents
+(plugin layout, transmission re-test). Every finding verified against real data
+or a live scenario, then fixed and re-verified.
+
+### Fixed — scan.py (accuracy; was poisoning every downstream number)
+
+On the real 14-day scan the headline numbers were badly off; now corrected:
+
+- Wait time 46h → **9h26m** (was printing the UNcapped sum; one overnight dialog
+  = 19.6h). Now: capped display, wait charged once per dialog (not per question),
+  cross-file dedup of resumed sessions.
+- Denials 32 → **20** (37.5% were false positives — file dumps that merely
+  contained "has been denied"). Now prefix-anchored.
+- Freetext 24 → **15** (preview-suffix answers were misclassified as freetext,
+  skewing the core ceremony-vs-signal metric). Verified: the 15 remaining are all
+  genuinely divergent answers.
+- One Escape counted as 2 interventions → deduped ("for tool use" interruptions).
+- `/model`, `/clear` were captured as skills (12% of asks mislabeled) → builtins
+  ignored, cur_skill reset on /clear.
+- Added: `isSidechain` guard; format-drift warning (dialogs seen but ~0 parsed).
+
+### Fixed — build_page.py + template (security/robustness)
+
+- **Stored XSS**: `</script>` in transcript text broke out of the DATA block and
+  ran arbitrary JS. Now escaped at injection; verified payload neutralized.
+- ZeroDivisionError when an event's project has no session record → guarded.
+- localStorage KEY now folds a card-set hash (same-range audits no longer collide).
+- Card/info titles now esc()'d.
+
+### Fixed — SKILL.md (prompt behavior)
+
+- **Step 5 apply-gate**: pasted transmissions are now treated as untrusted —
+  path allowlist, refuse deny-removals / broad-or-mutating allows / remote-egress,
+  scope-mismatch flag, preview-then-consent. Re-test confirmed F2+F3 blocked, F1
+  passes to consent. Egress clause generalized past the literal `curl|sh` shape.
+- Scratch-dir + absolute-path rule (outputs are personal data; must not litter).
+- Sparse/drift check now gates the "open page immediately" step.
+- Demo mode replaces the mission log (no leaking sim numbers as real); reality vs
+  simulation answer scripted; mission log gained a ✗ failure state.
+- meta.range derivation; cross-platform open (xdg-open/wslview); approved-prompt
+  blind-spot + consequence-weighting notes in Common mistakes.
+
+### Verified no-change-needed
+
+- Plugin layout: root SKILL.md w/ `name:` auto-loads as single-skill plugin;
+  both `/plugin install` and `npx skills add` work as-is (docs-confirmed).
+- Render-time esc(), cap math consistency, `?fresh=1` no-write: all sound.
+
+### Deferred (recommended, not done — would be net-new scope)
+
+- `apply.py` checked applier (turns step-5 prose into an enforced property).
+- ~~Measuring approved permission prompts~~ → DONE, see follow-up below.
+- Stale local debris in scripts/ (interventions.json/cards.json/map.html) —
+  gitignored, untracked, user-owned; flagged, not deleted.
+
+## Follow-up — 2026-07-20 — Approved-prompt detection (the screenshot's ask)
+
+Built the missing capability: capture prompts the user _approved_, not just denied.
+
+- Investigated raw transcripts: approvals leave NO explicit marker (no
+  permission-request/decision entry type; only `permissionMode` is logged), so
+  detection must be a proxy.
+- scan.py: new `approval` event = a mutating tool that ran successfully, in a
+  mode where a prompt was possible (`permissionMode` tracked; skips
+  bypassPermissions/auto, and acceptEdits for edits), with NO `permissions.allow`
+  rule covering it (global + project + local, resolved via each session's `cwd`).
+  Deduped per session per command-family → a lower bound. `--no-approvals` opt-out.
+  Conservative matcher: unparseable rule = covered (never flag when unsure).
+- Validated both directions on real data: 0 flags on this permissive machine
+  (no false positives); on a simulated locked-down allowlist, correctly flags
+  Write/Edit/git-commit/npm families with narrow rule suggestions.
+- Edge cases unit-tested & passing: project-local allow respected, error results
+  (block-level `is_error`) skipped, acceptEdits exempts edits not Bash,
+  bypassPermissions flags nothing.
+- build_page.py: `approval` evrow + totals. SKILL.md: 6th source row,
+  inferred/lower-bound framing, narrow-vs-blanket guidance, global-vs-project
+  scope. README + example data (8 approval events + fix-6 card) showcase it.
 
 # Sidebar rail + progressive build — 2026-07-15
 

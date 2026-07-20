@@ -58,6 +58,7 @@ def evrow(e):
     t = e["type"]
     if t == "ask_question": r.update(q=e["question"], a=e["selected"], k=selkey(e))
     elif t == "denial": r.update(q=e.get("detail", ""), a="DENIED", k="denied")
+    elif t == "approval": r.update(q=e.get("detail", ""), a=e.get("tool", "approved"), k="approved")
     elif t == "plan_approval": r.update(q=e.get("plan_head", ""), a=e["outcome"], k=e["outcome"])
     elif t == "interruption": r.update(q=e.get("detail", "")[:120], a="interrupted", k="interrupted")
     elif t == "ask_rejected": r.update(q=(e.get("questions") or [""])[0], a="dialog dismissed", k="dismissed")
@@ -81,7 +82,8 @@ for s in ss:
     if s["interventions"] > 0: byproj[s["project"]]["i"] += 1
 for e in ev:
     if e.get("wait_s"): byproj[e["project"]]["wait"] += min(e["wait_s"], CAP)
-projects = sorted([{"name": p, "n": v["n"], "i": v["i"], "pct": round(100 * v["i"] / v["n"]),
+projects = sorted([{"name": p, "n": v["n"], "i": v["i"],
+                    "pct": round(100 * v["i"] / v["n"]) if v["n"] else 0,
                     "wait": round(v["wait"])} for p, v in byproj.items()],
                   key=lambda x: (-x["pct"], -x["n"]))
 
@@ -174,9 +176,15 @@ DATA = {"meta": authored.get("meta", {"range": ""}), "projects": projects,
         "totals": {"events": len(ev), "sessions": len(ss),
                    "sessions_hit": sum(1 for s in ss if s["interventions"] > 0),
                    "questions": len(qs), "plans": len(plans),
-                   "plans_approved": sum(1 for e in plans if e["outcome"] == "approved")}}
+                   "plans_approved": sum(1 for e in plans if e["outcome"] == "approved"),
+                   "approvals": sum(1 for e in ev if e["type"] == "approval"),
+                   "denials": sum(1 for e in ev if e["type"] == "denial")}}
 
-out = open(args.template).read().replace("/*__DATA__*/", "const DATA = " + json.dumps(DATA) + ";")
+# transcript text is embedded verbatim in DATA; escape "</" so a question
+# containing "</script>" can't break out of the <script> tag (stored XSS).
+# json.dumps doesn't escape the slash, so we do it here.
+payload = json.dumps(DATA).replace("</", "<\\/")
+out = open(args.template).read().replace("/*__DATA__*/", "const DATA = " + payload + ";")
 open(args.out, "w").write(out)
 
 

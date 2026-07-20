@@ -32,8 +32,9 @@ A Claude Code skill. You say _"how often did you need me this week?"_ and it:
 
 1. **Scans your transcripts locally** (`~/.claude/projects/*.jsonl`) — every
    question dialog and which option you picked, every plan-mode approval,
-   every permission denial, every Escape press, and how long Claude sat
-   blocked waiting for each answer.
+   every permission denial, every Escape press, the permission prompts you
+   **approved** (inferred — the transcript logs denials, not approvals), and how
+   long Claude sat blocked waiting for each answer.
 2. **Traces every stop to its cause** — the literal line in a SKILL.md,
    settings.json, or CLAUDE.md that forced it.
 3. **Builds the Trials map** — an interactive local page, one trial card per
@@ -62,13 +63,27 @@ answers is **signal** — keep it, batch it. And some stops should never be
 fixed: the audit recommends _keeping_ destructive-command guardrails.
 A Jedi craves not `rm -rf`.
 
-| Signal                   | What you learn                                                                                                                                                                      |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Skill question gates** | Which skills mandate `AskUserQuestion` stops — with the % of answers that just took the recommended option (ceremony → automate) vs. free-text (real signal → batch, don't silence) |
-| **Plan-mode approvals**  | How often plan gates actually changed anything                                                                                                                                      |
-| **Permission denials**   | Deny-list hits and missing allowlist rules                                                                                                                                          |
-| **Time cost**            | Waiting time per stop, skill, project, and day — plus the five single costliest stops, with exact durations                                                                         |
-| **What NOT to fix**      | Destructive-command guardrails get the diff shown and a **reject** recommendation                                                                                                   |
+### The prompts you keep saying "yes" to
+
+There's a quieter drain than the ones you deny: the permission prompts you
+**approve**, over and over — "run `npm test`?" _yes_, "edit this file?" _yes_ —
+each one a small pause while a capable Jedi waits in your doorway. Claude Code's
+logs record the prompts you _denied_, but not the ones you approved, so padawan
+**infers** them: a command that ran, in a project where a prompt was possible,
+that none of your allow-rules covered. For each one it hands you a **narrow**
+allow rule — `Bash(git commit *)`, the exact command family, never a blanket
+`Bash(*)` that would trade the prompt for the keys to your machine. Because it's
+inferred, the count is a floor, not gospel — and if you've already allowed
+everything, it honestly tells you there's nothing to fix here.
+
+| Signal                   | What you learn                                                                                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Skill question gates** | Which skills mandate `AskUserQuestion` stops — with the % of answers that just took the recommended option (ceremony → automate) vs. free-text (real signal → batch, don't silence)         |
+| **Plan-mode approvals**  | How often plan gates actually changed anything                                                                                                                                              |
+| **Permission denials**   | Deny-list hits and missing allowlist rules                                                                                                                                                  |
+| **Approved prompts**     | The mutating commands you keep approving that no allow-rule covers (inferred, deduped per session) — each becomes a **narrowly-scoped** `permissions.allow` diff, never a blanket `Bash(*)` |
+| **Time cost**            | Waiting time per stop, skill, project, and day — plus the five single costliest stops, with exact durations                                                                                 |
+| **What NOT to fix**      | Destructive-command guardrails get the diff shown and a **reject** recommendation                                                                                                           |
 
 ## The knighting
 
@@ -148,17 +163,24 @@ scan.py ──▶ interventions.json ──▶ Claude reads causes ──▶ car
  (parses ~/.claude/projects/*.jsonl:      (reads settings.json,   (fix diffs +
   every AskUserQuestion + which option     SKILL.md gates,         recommendations)
   you picked, plan approvals, denials,     CLAUDE.md rules)
-  interruptions, wait times)
+  interruptions, wait times, and the
+  prompts you likely approved — inferred
+  from settings.json allow-rules)
 ```
 
 Everything runs locally. Nothing leaves your machine except the map page you
 choose to publish.
+
+Deterministic parts (`scan.py`, `build_page.py`) are covered by a stdlib test
+suite — run `python3 -m unittest discover tests` (no dependencies).
 
 ## Safety defaults
 
 - Never recommends removing destructive-command deny rules (shows the diff,
   recommends **reject**)
 - Never allowlists mutating MCP tools or arbitrary-code-execution commands
+- Fixes for approved prompts are **narrow** allow rules (the exact command
+  family), never a blanket `Bash(*)`; a broad option, if shown, is reject-flagged
 - Flags plugin-cache patches as ephemeral (overwritten on plugin update) and
   offers a durable CLAUDE.md override instead
 

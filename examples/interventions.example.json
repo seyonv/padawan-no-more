@@ -1383,6 +1383,94 @@
       "selected_rank": 0,
       "kind": "option",
       "multi": false
+    },
+    {
+      "type": "approval",
+      "project": "kyber-crystal-api",
+      "session": "18c26797",
+      "ts": "2026-07-05T10:12:00.000Z",
+      "skill": null,
+      "wait_s": 7.4,
+      "tool": "Bash",
+      "detail": "npm test",
+      "mode": "default"
+    },
+    {
+      "type": "approval",
+      "project": "kyber-crystal-api",
+      "session": "18c26797",
+      "ts": "2026-07-05T10:41:00.000Z",
+      "skill": null,
+      "wait_s": 5.1,
+      "tool": "Bash",
+      "detail": "git commit -m wire up hyperdrive",
+      "mode": "default"
+    },
+    {
+      "type": "approval",
+      "project": "kyber-crystal-api",
+      "session": "46685257",
+      "ts": "2026-07-07T14:03:00.000Z",
+      "skill": null,
+      "wait_s": 6.8,
+      "tool": "Bash",
+      "detail": "git commit -m fix coolant leak",
+      "mode": "default"
+    },
+    {
+      "type": "approval",
+      "project": "kyber-crystal-api",
+      "session": "46685257",
+      "ts": "2026-07-07T14:20:00.000Z",
+      "skill": null,
+      "wait_s": 9.2,
+      "tool": "Bash",
+      "detail": "npm run build",
+      "mode": "default"
+    },
+    {
+      "type": "approval",
+      "project": "moisture-farm-dashboard",
+      "session": "d8f56413",
+      "ts": "2026-07-08T09:34:00.000Z",
+      "skill": null,
+      "wait_s": 4.6,
+      "tool": "Edit",
+      "detail": "src/vaporator/panel.tsx",
+      "mode": "default"
+    },
+    {
+      "type": "approval",
+      "project": "moisture-farm-dashboard",
+      "session": "d8f56413",
+      "ts": "2026-07-08T11:02:00.000Z",
+      "skill": null,
+      "wait_s": 8.0,
+      "tool": "Bash",
+      "detail": "npm test",
+      "mode": "default"
+    },
+    {
+      "type": "approval",
+      "project": "holo-net-relay",
+      "session": "47294739",
+      "ts": "2026-07-10T16:48:00.000Z",
+      "skill": null,
+      "wait_s": 5.9,
+      "tool": "Write",
+      "detail": "relay/config.yaml",
+      "mode": "default"
+    },
+    {
+      "type": "approval",
+      "project": "holo-net-relay",
+      "session": "47294739",
+      "ts": "2026-07-10T17:15:00.000Z",
+      "skill": null,
+      "wait_s": 11.3,
+      "tool": "Bash",
+      "detail": "git push origin main",
+      "mode": "default"
     }
   ],
   "sessions": [
@@ -1394,7 +1482,7 @@
     {
       "project": "death-star-plans",
       "session": "46685257",
-      "interventions": 4
+      "interventions": 6
     },
     {
       "project": "death-star-plans",
@@ -1469,12 +1557,12 @@
     {
       "project": "kyber-crystal-api",
       "session": "18c26797",
-      "interventions": 10
+      "interventions": 12
     },
     {
       "project": "kyber-crystal-api",
       "session": "d8f56413",
-      "interventions": 7
+      "interventions": 9
     },
     {
       "project": "kyber-crystal-api",
@@ -1529,7 +1617,7 @@
     {
       "project": "moisture-farm-dashboard",
       "session": "47294739",
-      "interventions": 9
+      "interventions": 11
     },
     {
       "project": "moisture-farm-dashboard",
@@ -1566,12 +1654,39 @@
       "session": "8e944239",
       "interventions": 0
     },
-    { "project": "holo-net-relay", "session": "af42e12f", "interventions": 8 },
-    { "project": "holo-net-relay", "session": "c6a7ee39", "interventions": 14 },
-    { "project": "holo-net-relay", "session": "50c187fc", "interventions": 0 },
-    { "project": "holo-net-relay", "session": "448aaa9e", "interventions": 0 },
-    { "project": "holo-net-relay", "session": "508ebad7", "interventions": 0 },
-    { "project": "holo-net-relay", "session": "a7cad415", "interventions": 0 }
+    {
+      "project": "holo-net-relay",
+      "session": "af42e12f",
+      "interventions": 8
+    },
+    {
+      "project": "holo-net-relay",
+      "session": "c6a7ee39",
+      "interventions": 14
+    },
+    {
+      "project": "holo-net-relay",
+      "session": "50c187fc",
+      "interventions": 0
+    },
+    {
+      "project": "holo-net-relay",
+      "session": "448aaa9e",
+      "interventions": 0
+    },
+    {
+      "project": "holo-net-relay",
+      "session": "508ebad7",
+      "interventions": 0
+    },
+    {
+      "project": "holo-net-relay",
+      "session": "a7cad415",
+      "interventions": 0
+    }
   ],
-  "meta": { "days": 7, "files": 42 }
+  "meta": {
+    "days": 7,
+    "files": 42
+  }
 }

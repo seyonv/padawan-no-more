@@ -1,6 +1,10 @@
 .DS_Store
 .gstack/
 
+# python bytecode
+__pycache__/
+*.pyc
+
 # audit outputs — contain personal transcript data, never commit
 interventions.json
 cards.json
