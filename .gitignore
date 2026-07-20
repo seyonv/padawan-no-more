@@ -13,3 +13,9 @@ demo-map.html
 
 # pre-launch marketing material — stays local
 docs/agent-one-prompt.md
+
+# eval secrets & generated outputs
+.env
+evals/fixtures/scenarios/
+evals/results/
+evals/behavior/runs/
