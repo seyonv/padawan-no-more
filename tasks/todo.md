@@ -1,3 +1,25 @@
+# Deep-dive validation & hardening — 2026-07-20
+
+Goal: adversarially test padawan-no-more end to end (parser correctness, page
+robustness, SKILL.md prompt behavior, fresh-user experience), then fix what breaks.
+
+- [ ] 1. scan.py correctness audit against real transcripts (false denials from
+      results merely containing "has been denied"; sidechain events; wait_s
+      inflation across resume/compaction; answer-extraction spot checks;
+      ExitPlanMode heuristic; interruption double counting)
+- [ ] 2. build_page.py + template robustness (</script> injection via transcript
+      text; empty/odd schema; cap math consistency)
+- [ ] 3. SKILL.md prompt adversarial tests (malicious transmission block;
+      demo-mode integrity; sparse-scan flow; "never fake a number")
+- [ ] 4. Fresh-eyes user review (output littering / cwd ambiguity; open(1) is
+      macOS-only; triggering; install paths)
+- [ ] 5. Triage findings, fix, verify
+- [ ] 6. Review section below
+
+## Review
+
+(pending)
+
 # Sidebar rail + progressive build — 2026-07-15
 
 - [x] template.html: two-column grid, sticky sidebar (mascot, progress, scrollspy nav)
