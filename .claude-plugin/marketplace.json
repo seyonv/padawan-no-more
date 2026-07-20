@@ -1,6 +1,9 @@
 {
   "name": "padawan-no-more",
   "owner": { "name": "Seyon Vasantharajan" },
+  "metadata": {
+    "description": "Padawan No More — run the Jedi Trials on your Claude Code transcripts and knight your Claude."
+  },
   "plugins": [
     {
       "name": "padawan-no-more",
