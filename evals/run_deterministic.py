@@ -37,6 +37,11 @@ def run_scenario(sdir):
     o["wait_total"] = sum(e["wait_s"] for e in ev if e.get("wait_s"))
     o["skills"] = [e.get("skill") for e in asks]
     o["approval_details"] = [e.get("detail", "") for e in ev if e["type"] == "approval"]
+    # everything the scan stored that could carry a leaked secret, incl. what
+    # build_page.py renders into card evidence
+    o["details_blob"] = " ".join(
+        str(e.get(k, "")) for e in ev
+        for k in ("detail", "command", "result", "plan_head", "selected", "question"))
     if exp.get("build_map"):
         cards = tempfile.mktemp(suffix=".json")
         mh = tempfile.mktemp(suffix=".html")
@@ -82,6 +87,10 @@ def score(o, exp):
         add("map_escaped", o["map_html"] is not None
             and exp["map_must_not_contain"] not in o["map_html"],
             f"payload {exp['map_must_not_contain']!r} must not survive into map.html")
+    for secret in exp.get("secret_absent", []):
+        leaked = secret in o["details_blob"]
+        add(f"secret_absent {secret[:12]}…", not leaked,
+            "LEAKED into scan event details" if leaked else "redacted")
     return s
 
 

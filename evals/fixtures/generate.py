@@ -378,11 +378,33 @@ def sc_locked_down_rich():
     return {"-Users-dev-payments-api": rows}, {"allow": []}, exp
 
 
+GH_TOKEN = "ghp_ABCDEFGHIJKLMNOPQRST0123456789wxyz"
+STRIPE_KEY = "sk_live_51H8xEXAMPLEtokenABCDEFGHIJKLMN"
+
+
+def sc_secret_redaction():
+    # Commands the user approved that carry live credentials. The skill surfaces
+    # command history as card evidence, so if scan.py doesn't redact, the secret
+    # leaks into the map and the transmission. Ground truth: the scan's stored
+    # event details MUST NOT contain the raw secrets.
+    cwd = "/Users/dev/api"
+    rows = []
+    rows += _approval_bash(
+        "s0", f"git push https://x-access-token:{GH_TOKEN}@github.com/acme/api.git main",
+        t=200, cwd=cwd)
+    rows += _approval_bash("s1", f"STRIPE_SECRET_KEY={STRIPE_KEY} npm run seed",
+                           t=150, cwd=cwd)
+    exp = {"types": {"approval": 2},
+           "secret_absent": [GH_TOKEN, STRIPE_KEY]}
+    return {"-Users-dev-api": rows}, {"allow": []}, exp
+
+
 SCENARIOS = {
     "ceremony-heavy": sc_ceremony_heavy,
     "signal-heavy": sc_signal_heavy,
     "signal-heavy-rich": sc_signal_heavy_rich,
     "locked-down-rich": sc_locked_down_rich,
+    "secret-redaction": sc_secret_redaction,
     "sparse": sc_sparse,
     "locked-down-allowlist": sc_locked_down_allowlist,
     "permissive": sc_permissive,
