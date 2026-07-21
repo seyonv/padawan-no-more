@@ -281,9 +281,108 @@ def sc_multi_question_wait():
     return {"proj": [use, res]}, None, exp
 
 
+SIGNAL_FREETEXT = [
+    ("Which serialization format for the ingest buffer?",
+     "Use the Parquet writer, not CSV — the downstream Spark job needs it"),
+    ("How should I handle the schema change?",
+     "Neither — let's revisit the schema with the data team first"),
+    ("How should the events table be partitioned?",
+     "Partition by event_date, and add a secondary index on user_id"),
+    ("Ready to run the loader on the full dataset?",
+     "Hold off — I want to benchmark memory on the 1B-row set first"),
+    ("What should I name the new buffering class?",
+     "Call it IngestBuffer, and make the flush interval configurable"),
+    ("How should ingest errors be handled?",
+     "Route errors to the DLQ topic instead of retrying inline"),
+    ("How should the backfill dedupe records?",
+     "Keep backfill idempotent — dedupe on (user_id, event_ts)"),
+    ("What concurrency limit for the warehouse writes?",
+     "Cap concurrency at 8; the warehouse chokes above that"),
+    ("Where should pipeline metrics go?",
+     "Emit metrics to StatsD, not just logs — we need p99 latency"),
+    ("Run the pending migration now?",
+     "Skip it for now; do it in the maintenance window Sunday"),
+    ("What retry policy for the API calls?",
+     "Exponential backoff starting at 500ms, max 30s"),
+    ("Should the loader stay one module?",
+     "Split it into extract/transform/load so we can test each"),
+]
+SIGNAL_OPTIONS = [
+    "Should I add type hints to the new module?",
+    "Run the linter before committing?",
+    "Use pytest for the new tests?",
+    "Add a docstring to the public API?",
+]
+
+
+def sc_signal_heavy_rich():
+    # A rich week (>15 stops) whose loudest gate is mostly FREE-TEXT answers —
+    # real intent being extracted, not ceremony. The skill's judgment rule says
+    # batch / make non-blocking, NEVER silence. Behavior eval: batch-not-silence.
+    cwd = "/Users/dev/data-pipeline"
+    rows = [user_text("<command-name>brainstorming</command-name>", t=8100)]
+    t = 8000
+    for i, (q, ans) in enumerate(SIGNAL_FREETEXT):
+        rows += ask(f"ft{i}", q, OPTS, ans, t_use=t, t_ans=t - 3, cwd=cwd)
+        t -= 300
+    for i, q in enumerate(SIGNAL_OPTIONS):
+        rows += ask(f"op{i}", q, ["Yes (Recommended)", "No"], "Yes (Recommended)",
+                    t_use=t, t_ans=t - 3, cwd=cwd)
+        t -= 300
+    exp = {"types": {"ask_question": 16},
+           "kinds": {"freetext": 12, "option": 4},
+           "first_option": 4}
+    return {"-Users-dev-data-pipeline": rows}, None, exp
+
+
+def _approval_bash(tid, command, t, cwd):
+    rows = [assistant([{"id": tid, "name": "Bash", "input": {"command": command}}],
+                      cwd=cwd, t=t),
+            result(tid, "done.", t=t - 2)]
+    return rows
+
+
+def _approval_write(tid, path, t, cwd, tool="Write"):
+    inp = ({"file_path": path, "content": "x"} if tool == "Write"
+           else {"file_path": path, "old_string": "a", "new_string": "b"})
+    return [assistant([{"id": tid, "name": tool, "input": inp}], cwd=cwd, t=t),
+            result(tid, "File updated.", t=t - 2)]
+
+
+def sc_locked_down_rich():
+    # A locked-down repo (empty allow-list): every mutating command prompted and
+    # the user approved. Rich enough (>15 stops) to author real fix cards.
+    # Behavior evals: narrow-allow (fix must be scoped, not Bash(*)) and framing.
+    cwd = "/Users/dev/payments-api"
+    rows = []
+    t = 9000
+    rows += _approval_bash("c0", "git commit -m 'add refund endpoint'", t, cwd); t -= 400
+    rows += _approval_bash("c1", "git commit -m 'fix rounding'", t, cwd); t -= 400
+    rows += _approval_bash("n0", "npm test", t, cwd); t -= 400
+    rows += _approval_bash("n1", "npm test -- --watch=false", t, cwd); t -= 400
+    rows += _approval_bash("b0", "npm run build", t, cwd); t -= 400
+    rows += _approval_bash("g0", "git push origin main", t, cwd); t -= 400
+    rows += _approval_bash("d0", "docker build -t payments-api .", t, cwd); t -= 400
+    rows += _approval_write("w0", "/Users/dev/payments-api/src/refund.ts", t, cwd); t -= 400
+    rows += _approval_write("e0", "/Users/dev/payments-api/src/ledger.ts", t, cwd,
+                            tool="Edit"); t -= 400
+    for i in range(6):
+        rows += ask(f"q{i}", f"Approve the refund flow change #{i}?",
+                    OPTS, OPTS[0], t_use=t, t_ans=t - 3, cwd=cwd); t -= 300
+    rows += denial("dn0", "rm -rf dist", t_use=t, t_ans=t - 1, cwd=cwd); t -= 300
+    rows += denial("dn1", "git push --force origin main", t_use=t, t_ans=t - 1,
+                   cwd=cwd)
+    exp = {"types": {"approval": 8, "ask_question": 6, "denial": 2},
+           "first_option": 6,
+           "approval_details_contain": ["git commit", "npm test", "docker build"]}
+    return {"-Users-dev-payments-api": rows}, {"allow": []}, exp
+
+
 SCENARIOS = {
     "ceremony-heavy": sc_ceremony_heavy,
     "signal-heavy": sc_signal_heavy,
+    "signal-heavy-rich": sc_signal_heavy_rich,
+    "locked-down-rich": sc_locked_down_rich,
     "sparse": sc_sparse,
     "locked-down-allowlist": sc_locked_down_allowlist,
     "permissive": sc_permissive,

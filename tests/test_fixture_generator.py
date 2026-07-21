@@ -18,7 +18,7 @@ def _generate():
 def test_generates_all_scenarios_with_expected():
     out = _generate()
     names = sorted(os.listdir(out))
-    assert len(names) == 12
+    assert len(names) == 14
     for n in names:
         assert os.path.isfile(os.path.join(out, n, "expected.json"))
         projects = os.path.join(out, n, "home", ".claude", "projects")
