@@ -69,6 +69,9 @@ report gate** (sparse, demo) keep the cheap haiku default and pass there.
 Bottom line: the skill's logic is sound; its richer behaviors need a capable
 model to land reliably.
 
+Final green experiments: deterministic `det-eea2395` (12/12), behavior
+`beh-9067490` (7/7, 100% checks + 100% judge).
+
 ---
 
 # Deep-dive validation & hardening — 2026-07-20
