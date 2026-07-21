@@ -16,6 +16,7 @@ docs/agent-one-prompt.md
 
 # eval secrets & generated outputs
 .env
+evals/.venv/
 evals/fixtures/scenarios/
 evals/results/
 evals/behavior/runs/
