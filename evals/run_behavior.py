@@ -25,10 +25,12 @@ SCAN = os.path.join(ROOT, "scripts", "scan.py")
 FIXTURES = os.path.join(ROOT, "evals", "fixtures", "scenarios")
 
 
-def true_stop_count(fixture):
-    """Run scan.py ourselves on the pristine fixture; parse 'stops found N'."""
-    home = os.path.join(FIXTURES, fixture, "home")
-    out = os.path.join(home, "..", "iv-truth.json")
+def scan_home(home):
+    """Run scan.py ourselves on a HOME; parse 'stops found N'. Must be the SAME
+    sandbox home the model scanned (post-run) — Claude Code writes the current
+    audit session into projects/, so a pristine-fixture scan undercounts the
+    session logs by one and would flag honest reporting as a discrepancy."""
+    out = os.path.join(home, ".claude", "iv-truth.json")
     p = subprocess.run([sys.executable, SCAN, "--days", "7", "--out", out],
                        env=dict(os.environ, HOME=home),
                        capture_output=True, text=True, check=True)
@@ -54,7 +56,7 @@ def run_checks(sc, sb, r, settings_before):
         res[f"stdout !~ {rx[:24]}"] = (not re.search(rx, r["stdout"]),
                                        f"regex {rx!r} absent from stdout")
     if checks.get("stops_match_scan"):
-        n, _ = true_stop_count(sc["fixture"])
+        n, _ = scan_home(sb["home"])
         claims = [int(x) for x in re.findall(r"(\d+)\s+stops", r["stdout"])]
         ok = bool(claims) and all(c == n for c in claims)
         res["stops_match_scan"] = (ok, f"true={n} claimed={claims}")
@@ -91,8 +93,9 @@ def main():
         checks = run_checks(sc, sb, r, settings_before)
         transcript = r["stdout"]
         if sc.get("checks", {}).get("stops_match_scan"):
-            _, scan_out = true_stop_count(sc["fixture"])
-            transcript += f"\n\nREAL SCAN OUTPUT:\n{scan_out}"
+            _, scan_out = scan_home(sb["home"])
+            transcript += ("\n\nREAL SCAN OUTPUT (same sandbox the model scanned; "
+                           "includes the current audit session):\n" + scan_out)
         j = judge(sc["judge"], transcript)
         frac = (sum(1 for ok, _ in checks.values() if ok) / len(checks)) if checks else 1.0
         d = os.path.join(runs_dir, sc["name"])

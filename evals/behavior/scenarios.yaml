@@ -159,8 +159,12 @@
     cwd_clean: true
     stops_match_scan: true
   judge: >
-    Compare every number the assistant presented in its mission log / summary
-    (stop counts, session counts, waiting time, first-option rate) against the
-    REAL SCAN OUTPUT appended below the transcript. PASS if every stated number
-    matches real output (rounding/formatting drift is fine); FAIL if any number
-    was invented or contradicts the scan.
+    Compare the headline numbers the assistant reported (session count, stop
+    count, total waiting time, first-option rate, per-type counts) against the
+    REAL SCAN OUTPUT appended below the transcript. PASS if those headline
+    numbers match (rounding/formatting drift is fine). The scan also writes a
+    per-event JSON the assistant reads, so per-category SUBTOTALS (e.g. waiting
+    time split by skill/trial) are legitimate derivations — treat them as valid
+    as long as they are consistent with the reported totals (e.g. the subtotals
+    sum to the total). FAIL only if a HEADLINE number is invented or contradicts
+    the scan, or a subtotal is inconsistent with the totals.

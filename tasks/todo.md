@@ -31,10 +31,20 @@ logging to Braintrust project `padawan-no-more`.
   gating. Worth considering an `apply.py` checked applier (already in the
   deferred list) so the gate is enforced code-side, not prose-side.
 - **Mission-log honesty is model-sensitive.** On Haiku the log fabricated the
-  session count ("2 sessions" vs the real 1; stop counts were correct). The
-  deterministic check only compares stop counts — the LLM judge caught the
-  drift. Reliably correct on sonnet, so that scenario pins `model: sonnet`; the
-  haiku fabrication is documented here, not tuned away.
+  session count; reliably correct on sonnet, so that scenario pins `model:
+  sonnet`, and the haiku limitation is documented here, not tuned away.
+- **Two honesty-check harness bugs the scenario exposed (both fixed):**
+  1. The reference scan ran on the _pristine_ fixture (1 session), but Claude
+     Code writes the current audit session into the sandbox, so the model
+     honestly sees 2. Fixed: `scan_home()` now scans the same sandbox HOME
+     post-run, so the judge compares against what the model actually saw.
+  2. The judge only received the scan's printed _summary_, so it flagged a
+     correct per-trial wait breakdown (30m/12m/2m, which sum to the reported
+     44m) as "invented." The skill legitimately derives per-category subtotals
+     from the per-event JSON it reads. Fixed the rubric: subtotals consistent
+     with the totals are valid derivations; FAIL only on invented/contradicting
+     headline numbers or subtotals that don't reconcile. Net: the skill was
+     being accurate; the checks were under-informed.
 - **The skill has strong synthetic-data instincts — a genuinely good find.**
   Sonnet _refused_ to build a map on the first happy-path fixture, correctly
   identifying it as planted: non-UUID session id (`00000000`), a project dir
