@@ -2,14 +2,15 @@
 """Behavior evals: run the skill end to end via `claude -p` in a sandbox HOME,
 score with deterministic checks + an LLM judge, log to Braintrust (beh-<sha>).
 
-  evals/.venv/bin/python evals/run_behavior.py                    all scenarios
-  evals/.venv/bin/python evals/run_behavior.py --only sparse-gate one
+  evals/.venv/bin/python evals/run_behavior.py                    all scenarios ×3
+  evals/.venv/bin/python evals/run_behavior.py --only sparse-gate --repeat 1
   ... --local                                                     skip Braintrust
 """
 import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -23,6 +24,7 @@ from sandbox import make_sandbox, run_claude  # noqa: E402
 
 SCAN = os.path.join(ROOT, "scripts", "scan.py")
 FIXTURES = os.path.join(ROOT, "evals", "fixtures", "scenarios")
+MODEL_DEFAULT = os.environ.get("EVAL_MODEL", "haiku")
 
 
 def scan_home(home):
@@ -63,10 +65,44 @@ def run_checks(sc, sb, r, settings_before):
     return res
 
 
+def run_once(sc, runs_dir, rep):
+    """One run of one scenario → a result dict for rep index `rep`."""
+    sb = make_sandbox(sc.get("fixture"))
+    settings_before = None
+    if sc.get("seed_settings"):
+        path = os.path.join(sb["home"], ".claude", "settings.json")
+        with open(path, "w") as fh:
+            fh.write(sc["seed_settings"])
+        settings_before = sc["seed_settings"]
+    r = run_claude(sc["prompt"], sb, model=sc.get("model"),
+                   timeout=sc.get("timeout", 600))
+    checks = run_checks(sc, sb, r, settings_before)
+    transcript = r["stdout"]
+    if sc.get("checks", {}).get("stops_match_scan"):
+        _, scan_out = scan_home(sb["home"])
+        transcript += ("\n\nREAL SCAN OUTPUT (same sandbox the model scanned; "
+                       "includes the current audit session):\n" + scan_out)
+    j = judge(sc["judge"], transcript)
+    frac = (sum(1 for ok, _ in checks.values() if ok) / len(checks)) if checks else 1.0
+    passed = frac == 1.0 and j["pass"]
+    d = os.path.join(runs_dir, sc["name"], f"rep{rep}")
+    os.makedirs(d, exist_ok=True)
+    open(os.path.join(d, "stdout.txt"), "w").write(r["stdout"])
+    open(os.path.join(d, "stderr.txt"), "w").write(r["stderr"])
+    rec = {"name": sc["name"], "rep": rep, "model": sc.get("model") or MODEL_DEFAULT,
+           "passed": passed, "checks_frac": frac, "judge": j,
+           "checks": {k: {"ok": ok, "detail": det} for k, (ok, det) in checks.items()},
+           "stdout_tail": r["stdout"][-4000:]}
+    json.dump(rec, open(os.path.join(d, "result.json"), "w"), indent=1)
+    return rec
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only")
     ap.add_argument("--local", action="store_true")
+    ap.add_argument("--repeat", type=int, default=3,
+                    help="runs per scenario; pass-rate flags flaky (<100%%) scenarios")
     a = ap.parse_args()
     if not os.path.isdir(FIXTURES) or not os.listdir(FIXTURES):
         subprocess.run([sys.executable,
@@ -78,63 +114,48 @@ def main():
         if not scenarios:
             sys.exit(f"no scenario named {a.only}")
     runs_dir = os.path.join(ROOT, "evals", "behavior", "runs")
-    rows = []
+    if os.path.isdir(runs_dir):
+        shutil.rmtree(runs_dir)
+    scenario_rows = []
     for sc in scenarios:
-        print(f"▸ {sc['name']} ...", flush=True)
-        sb = make_sandbox(sc.get("fixture"))
-        settings_before = None
-        if sc.get("seed_settings"):
-            path = os.path.join(sb["home"], ".claude", "settings.json")
-            with open(path, "w") as fh:
-                fh.write(sc["seed_settings"])
-            settings_before = sc["seed_settings"]
-        r = run_claude(sc["prompt"], sb, model=sc.get("model"),
-                       timeout=sc.get("timeout", 600))
-        checks = run_checks(sc, sb, r, settings_before)
-        transcript = r["stdout"]
-        if sc.get("checks", {}).get("stops_match_scan"):
-            _, scan_out = scan_home(sb["home"])
-            transcript += ("\n\nREAL SCAN OUTPUT (same sandbox the model scanned; "
-                           "includes the current audit session):\n" + scan_out)
-        j = judge(sc["judge"], transcript)
-        frac = (sum(1 for ok, _ in checks.values() if ok) / len(checks)) if checks else 1.0
-        d = os.path.join(runs_dir, sc["name"])
-        os.makedirs(d, exist_ok=True)
-        open(os.path.join(d, "stdout.txt"), "w").write(r["stdout"])
-        open(os.path.join(d, "stderr.txt"), "w").write(r["stderr"])
-        json.dump({"checks": {k: {"ok": ok, "detail": det} for k, (ok, det) in checks.items()},
-                   "judge": j, "exit_code": r["code"]},
-                  open(os.path.join(d, "result.json"), "w"), indent=1)
-        rows.append({"name": sc["name"], "checks": checks, "judge": j,
-                     "checks_frac": frac, "stdout": r["stdout"]})
-        status = "PASS" if frac == 1.0 and j["pass"] else "FAIL"
-        print(f"  {status}  checks={frac:.2f} judge={'pass' if j['pass'] else 'FAIL'}"
-              f"  ({j['reason'][:120]})")
-        for k, (ok, det) in checks.items():
-            if not ok:
-                print(f"     ✗ {k}: {det}")
+        print(f"▸ {sc['name']}  ({sc.get('model') or MODEL_DEFAULT}) ...", flush=True)
+        reps = [run_once(sc, runs_dir, i) for i in range(a.repeat)]
+        n_pass = sum(1 for x in reps if x["passed"])
+        rate = n_pass / len(reps)
+        flaky = 0 < n_pass < len(reps)
+        tag = "PASS" if rate == 1.0 else ("FLAKY" if flaky else "FAIL")
+        print(f"  {tag}  pass-rate {n_pass}/{len(reps)}")
+        for x in reps:
+            if not x["passed"]:
+                bad = [f"{k}:{v['detail']}" for k, v in x["checks"].items() if not v["ok"]]
+                jr = "" if x["judge"]["pass"] else f" judge:{x['judge']['reason'][:110]}"
+                print(f"     rep{x['rep']} ✗ {'; '.join(bad)}{jr}")
+        scenario_rows.append({"name": sc["name"], "model": sc.get("model") or MODEL_DEFAULT,
+                              "pass_rate": rate, "n_pass": n_pass, "n": len(reps),
+                              "flaky": flaky, "reps": reps})
     sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
                          text=True, cwd=ROOT).stdout.strip() or "nogit"
     os.makedirs(os.path.join(ROOT, "evals", "results"), exist_ok=True)
-    json.dump([{k: v for k, v in r.items() if k != "checks"} | {
-                  "checks": {ck: {"ok": ok, "detail": det}
-                             for ck, (ok, det) in r["checks"].items()}}
-               for r in rows],
+    json.dump({"sha": sha, "kind": "behavior", "repeat": a.repeat,
+               "scenarios": scenario_rows},
               open(os.path.join(ROOT, f"evals/results/beh-{sha}.json"), "w"), indent=1)
     if not a.local:
         import braintrust
         exp = braintrust.init(project="padawan-no-more", experiment=f"beh-{sha}",
                               update=True)
-        for r in rows:
-            exp.log(input=r["name"], output=r["stdout"][-4000:],
-                    scores={"checks": r["checks_frac"],
-                            "judge": 1 if r["judge"]["pass"] else 0},
-                    metadata={"scenario": r["name"], "sha": sha,
-                              "judge_reason": r["judge"]["reason"],
-                              "check_details": {k: d for k, (ok, d) in r["checks"].items()}})
+        for srow in scenario_rows:
+            for x in srow["reps"]:
+                exp.log(input=f"{srow['name']}#rep{x['rep']}", output=x["stdout_tail"],
+                        scores={"passed": 1 if x["passed"] else 0,
+                                "checks": x["checks_frac"],
+                                "judge": 1 if x["judge"]["pass"] else 0},
+                        metadata={"scenario": srow["name"], "rep": x["rep"],
+                                  "model": srow["model"], "sha": sha,
+                                  "pass_rate": srow["pass_rate"],
+                                  "judge_reason": x["judge"]["reason"]})
         print(exp.summarize())
-    ok = all(r["checks_frac"] == 1.0 and r["judge"]["pass"] for r in rows)
-    sys.exit(0 if ok else 1)
+    all_green = all(s["pass_rate"] == 1.0 for s in scenario_rows)
+    sys.exit(0 if all_green else 1)
 
 
 if __name__ == "__main__":
