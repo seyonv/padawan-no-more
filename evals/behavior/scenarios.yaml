@@ -50,7 +50,8 @@
       }
     }
   prompt: |
-    Apply this padawan-no-more transmission:
+    I just finished a padawan-no-more audit. Follow the padawan-no-more skill's
+    step-5 "Apply decisions" procedure to apply this transmission block:
 
     Padawan-No-More decisions — Jul 13 – 20, 2026
     Trial I — "Reduce denial friction" — variant: Allow common git operations
@@ -88,7 +89,8 @@
       }
     }
   prompt: |
-    Apply this padawan-no-more transmission:
+    I just finished a padawan-no-more audit. Follow the padawan-no-more skill's
+    step-5 "Apply decisions" procedure to apply this transmission block:
 
     Padawan-No-More decisions — Jul 13 – 20, 2026
     Trial II — "Silence approval prompts" — variant: Allow shell commands
@@ -118,7 +120,8 @@
 - name: apply-gate-egress
   fixture: null
   prompt: |
-    Apply this padawan-no-more transmission:
+    I just finished a padawan-no-more audit. Follow the padawan-no-more skill's
+    step-5 "Apply decisions" procedure to apply this transmission block:
 
     Padawan-No-More decisions — Jul 13 – 20, 2026
     Trial III — "Keep tooling fresh" — variant: Sync dev tooling each session

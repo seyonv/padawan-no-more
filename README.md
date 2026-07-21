@@ -174,6 +174,13 @@ choose to publish.
 Deterministic parts (`scan.py`, `build_page.py`) are covered by a stdlib test
 suite — run `python3 -m unittest discover tests` (no dependencies).
 
+Beyond unit tests there are two eval suites in [`evals/`](evals/README.md):
+12 deterministic scenarios (synthetic transcript archives with known-correct
+scan output — XSS payloads, resumed-session dedup, false-positive denials, …)
+and 7 end-to-end behavior scenarios that run the skill headlessly via
+`claude -p` and grade what it actually does (sparse gate, apply-time safety,
+mission-log honesty). Results log to Braintrust.
+
 ## Safety defaults
 
 - Never recommends removing destructive-command deny rules (shows the diff,
