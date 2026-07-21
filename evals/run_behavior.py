@@ -154,6 +154,11 @@ def main():
                                   "pass_rate": srow["pass_rate"],
                                   "judge_reason": x["judge"]["reason"]})
         print(exp.summarize())
+    try:
+        import report
+        print("report →", report.build())
+    except Exception as e:  # report is a convenience, never fail the run on it
+        print(f"(report skipped: {e})")
     all_green = all(s["pass_rate"] == 1.0 for s in scenario_rows)
     sys.exit(0 if all_green else 1)
 

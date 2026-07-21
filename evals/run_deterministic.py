@@ -111,6 +111,12 @@ def main():
     os.makedirs(os.path.join(ROOT, "evals", "results"), exist_ok=True)
     json.dump(rows, open(os.path.join(ROOT, f"evals/results/det-{sha}.json"), "w"),
               indent=1)
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "evals"))
+        import report
+        print("report →", report.build())
+    except Exception as e:
+        print(f"(report skipped: {e})")
     all_ok = all(v["score"] for r in rows for v in r["scores"].values())
     if a.local:
         sys.exit(0 if all_ok else 1)
