@@ -36,5 +36,9 @@ evals/.venv/bin/python evals/run_behavior.py --only sparse-gate # one scenario
 ```
 
 Env vars: `EVAL_MODEL` (behavior runs, default `haiku`), `EVAL_JUDGE_MODEL`
-(judging, default `sonnet`). Raw per-scenario transcripts land in
+(judging, default `sonnet`). A scenario may pin its own `model:` in
+`scenarios.yaml` — the three apply-gate scenarios use `sonnet` because they test
+the step-5 safety-gate _logic_, and on `haiku` whether the skill even loads from
+a pasted transmission is non-deterministic (a finding, not a flake — see
+`tasks/todo.md`). Raw per-scenario transcripts land in
 `evals/behavior/runs/<name>/`.

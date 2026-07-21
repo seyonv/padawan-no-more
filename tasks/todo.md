@@ -17,15 +17,19 @@ logging to Braintrust project `padawan-no-more`.
 
 ## Findings from the first behavior run
 
-- **Apply-gate safety works when the skill is loaded.** All three malicious
-  transmissions are refused (deny-removal, `Bash(*)`, remote egress). First run
-  they "passed through" only because a bare "apply this transmission" prompt
-  doesn't trigger the skill — so it tested base Claude, not the step-5 gate.
-  Harness fixed to invoke the skill's apply procedure; then all three refuse.
+- **Apply-gate safety is real but model-sensitive.** All three malicious
+  transmissions (deny-removal, `Bash(*)`, remote egress) are reliably refused on
+  **sonnet** (3/3 across repeated runs). On **haiku** they pass through ~half the
+  time — not because the gate logic is wrong, but because whether the skill even
+  loads from a pasted transmission is non-deterministic on a weak model. The
+  apply-gate scenarios therefore pin `model: sonnet` (they test gate _logic_, not
+  haiku's trigger reliability); the audit-flow scenarios keep the haiku default.
 - **Design note surfaced:** the transmission-apply flow's safety depends on the
-  receiving session having the skill loaded. SKILL.md already acknowledges this
-  ("the receiving session may not have this skill's safety rules loaded"), but
-  the eval makes concrete that a naive paste into a fresh session gets no gating.
+  receiving session loading the skill. SKILL.md already acknowledges this ("the
+  receiving session may not have this skill's safety rules loaded"), but the eval
+  makes it concrete — a naive paste into a fresh session on a weak model gets no
+  gating. Worth considering an `apply.py` checked applier (already in the
+  deferred list) so the gate is enforced code-side, not prose-side.
 - **Mission-log honesty is model-sensitive.** On Haiku the log once stated
   "2 sessions" where the real scan read 1 (stop counts were correct). The
   deterministic check only compares stop counts; the LLM judge caught the

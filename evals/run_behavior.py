@@ -86,7 +86,8 @@ def main():
             with open(path, "w") as fh:
                 fh.write(sc["seed_settings"])
             settings_before = sc["seed_settings"]
-        r = run_claude(sc["prompt"], sb, timeout=sc.get("timeout", 600))
+        r = run_claude(sc["prompt"], sb, model=sc.get("model"),
+                       timeout=sc.get("timeout", 600))
         checks = run_checks(sc, sb, r, settings_before)
         transcript = r["stdout"]
         if sc.get("checks", {}).get("stops_match_scan"):
