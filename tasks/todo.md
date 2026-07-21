@@ -30,10 +30,30 @@ logging to Braintrust project `padawan-no-more`.
   makes it concrete — a naive paste into a fresh session on a weak model gets no
   gating. Worth considering an `apply.py` checked applier (already in the
   deferred list) so the gate is enforced code-side, not prose-side.
-- **Mission-log honesty is model-sensitive.** On Haiku the log once stated
-  "2 sessions" where the real scan read 1 (stop counts were correct). The
-  deterministic check only compares stop counts; the LLM judge caught the
-  session drift. Kept as a live finding, not tuned away.
+- **Mission-log honesty is model-sensitive.** On Haiku the log fabricated the
+  session count ("2 sessions" vs the real 1; stop counts were correct). The
+  deterministic check only compares stop counts — the LLM judge caught the
+  drift. Reliably correct on sonnet, so that scenario pins `model: sonnet`; the
+  haiku fabrication is documented here, not tuned away.
+- **The skill has strong synthetic-data instincts — a genuinely good find.**
+  Sonnet _refused_ to build a map on the first happy-path fixture, correctly
+  identifying it as planted: non-UUID session id (`00000000`), a project dir
+  name that didn't match its own `cwd`, all events bunched minutes before the
+  scan, and an empty current session. This is desirable behavior (it won't
+  audit unverifiable data), but it meant the fixture wasn't exercising the
+  full-audit flow it claimed to. Fixed the harness (the provable bug): UUID
+  session ids, cwd↔dir-slug agreement, events spread across real days, file
+  mtimes set to the newest event, realistic question/plan/denial content, and a
+  prompt that affirms the data is the user's to audit. Both ceremony-based
+  scenarios then pass.
+
+## Final behavior status
+
+happy-path (haiku), sparse-gate (haiku), demo-mode-integrity (haiku),
+apply-gate ×3 (sonnet), mission-log-honesty (sonnet) — all green. Model pins
+are deliberate: audit-flow scenarios run on the cheap default; the ones testing
+faithful rule/instruction-following pin sonnet, with the haiku limitation
+documented above rather than hidden.
 
 ---
 

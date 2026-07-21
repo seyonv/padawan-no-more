@@ -11,12 +11,35 @@ drives the parser with); timestamps are minutes-ago from generation time so a
 --days 7 scan always covers them.
 """
 import argparse
+import hashlib
 import json
 import os
 import shutil
 from datetime import datetime, timedelta, timezone
 
 NOW = datetime.now(timezone.utc)
+
+
+def fake_uuid(seed):
+    """Deterministic UUID-shaped session id — real session files are UUIDs, not
+    00000000, and a sharp model treats the tell as planted data."""
+    h = hashlib.sha1(seed.encode()).hexdigest()
+    return f"{h[:8]}-{h[8:12]}-4{h[13:16]}-{h[16:20]}-{h[20:32]}"
+
+
+def newest_mtime(rows):
+    """Epoch of the latest timestamp in a session, so the file's mtime matches
+    when it was 'last written' rather than the moment we generated it."""
+    stamps = []
+    for r in rows:
+        t = r.get("timestamp")
+        if t:
+            try:
+                stamps.append(datetime.fromisoformat(
+                    t.replace("Z", "+00:00")).timestamp())
+            except ValueError:
+                pass
+    return max(stamps) if stamps else NOW.timestamp()
 
 
 def ts(mins_ago):
@@ -39,49 +62,89 @@ def user_text(text, t=60):
     return {"type": "user", "timestamp": ts(t), "message": {"content": text}}
 
 
-def ask(tid, question, options, answer, t_use=60, t_ans=59):
+def ask(tid, question, options, answer, t_use=60, t_ans=59, cwd="/proj/app"):
     """One single-question AskUserQuestion round-trip in the real dialog format."""
     use = assistant([{"id": tid, "name": "AskUserQuestion",
                       "input": {"questions": [{"question": question,
                                 "options": [{"label": o} for o in options]}]}}],
-                    t=t_use)
+                    cwd=cwd, t=t_use)
     res = result(tid, f'Your questions have been answered: "{question}"="{answer}". '
                       "You can now continue with these answers in mind.", t=t_ans)
     return [use, res]
 
 
-def plan(tid, head, t_use=60, t_ans=59):
+def plan(tid, head, t_use=60, t_ans=59, cwd="/proj/app"):
     use = assistant([{"id": tid, "name": "ExitPlanMode", "input": {"plan": head}}],
-                    t=t_use)
+                    cwd=cwd, t=t_use)
     res = result(tid, "User has approved your plan. You can now start coding.", t=t_ans)
     return [use, res]
 
 
-def denial(tid, command, t_use=60, t_ans=59):
+def denial(tid, command, t_use=60, t_ans=59, cwd="/proj/app"):
     use = assistant([{"id": tid, "name": "Bash", "input": {"command": command}}],
-                    t=t_use)
+                    cwd=cwd, t=t_use)
     res = result(tid, "Permission to use Bash has been denied by the user.", t=t_ans)
     return [use, res]
 
 
 OPTS = ["Proceed (Recommended)", "Hold off"]
 
+# Realistic ceremony-week content — the happy-path/mission-log behavior scenarios
+# run a real model against this, and a capable model rightly refuses to audit
+# obviously-planted data ("Ceremony question number 0"). So it must read like a
+# genuine week of work: real questions, real recommendations, a real project.
+CEREMONY_QS = [
+    ("Which HTTP client should the SDK use?",
+     ["axios (Recommended)", "native fetch", "got"]),
+    ("Should I extract the retry logic into its own module?",
+     ["Yes, extract it (Recommended)", "Leave it inline"]),
+    ("What should I name the new caching layer?",
+     ["CacheStore (Recommended)", "MemoryCache"]),
+    ("Which test runner for the new package?",
+     ["vitest (Recommended)", "jest"]),
+    ("Should the webhook handler be idempotent by default?",
+     ["Yes (Recommended)", "No, callers opt in"]),
+    ("Where should the rate-limit middleware live?",
+     ["src/middleware/ (Recommended)", "src/lib/"]),
+    ("Add a database index on orders.created_at?",
+     ["Yes, add it (Recommended)", "Skip for now"]),
+    ("Which log level for payment-retry warnings?",
+     ["warn (Recommended)", "info", "error"]),
+    ("Bump the minor version for this change?",
+     ["Yes, minor bump (Recommended)", "Patch only"]),
+    ("Roll the new checkout flow out to everyone at once?",
+     ["Ship to 10% first (Recommended)", "Ship to 100% now"]),
+]
+CEREMONY_PLANS = [
+    "Add a Redis-backed session store: SessionStore class, migration, and tests",
+    "Refactor the auth middleware into small composable guards",
+    "Introduce a typed config loader and remove scattered process.env reads",
+    "Split the orders service into separate read and write paths",
+]
+
 
 def sc_ceremony_heavy():
-    rows = []
-    for i in range(10):
-        ans = OPTS[0] if i < 9 else OPTS[1]
-        rows += ask(f"a{i}", f"Ceremony question number {i}?", OPTS, ans,
-                    t_use=300 - i * 10, t_ans=299 - i * 10)
-    for i in range(4):
-        rows += plan(f"p{i}", f"Plan variant {i}", t_use=200 - i * 5, t_ans=199 - i * 5)
-    rows += denial("d0", "rm -rf build", t_use=150, t_ans=149)
-    rows += denial("d1", "git push --force", t_use=140, t_ans=139)
-    rows.append(user_text("[Request interrupted by user]", t=130))
+    # cwd and the project-dir slug must agree (real Claude Code names the dir
+    # after the slugified cwd), and events spread across real days — a sharp
+    # model flags a bare `acme-web` dir or all-events-in-one-window as planted.
+    cwd = "/Users/dev/acme-web"
+    rows = [user_text("<command-name>brainstorming</command-name>", t=6100)]
+    for i, (q, opts) in enumerate(CEREMONY_QS):
+        ans = opts[0] if i < 9 else opts[1]
+        rows += ask(f"a{i}", q, opts, ans, t_use=6000 - i * 320,
+                    t_ans=5997 - i * 320, cwd=cwd)
+    rows.append(user_text("<command-name>plan-exit-review</command-name>", t=2600))
+    for i, head in enumerate(CEREMONY_PLANS):
+        rows += plan(f"p{i}", head, t_use=2500 - i * 220, t_ans=2497 - i * 220,
+                     cwd=cwd)
+    rows += denial("d0", "rm -rf ~/.cache/acme", t_use=1400, t_ans=1399, cwd=cwd)
+    rows += denial("d1", "git push --force origin main", t_use=900, t_ans=899,
+                   cwd=cwd)
+    rows.append(user_text("[Request interrupted by user]", t=600))
     exp = {"types": {"ask_question": 10, "plan_approval": 4, "denial": 2,
                      "interruption": 1},
            "first_option": 9}
-    return {"proj": rows}, None, exp
+    return {"-Users-dev-acme-web": rows}, None, exp
 
 
 def sc_signal_heavy():
@@ -247,8 +310,11 @@ def build_all(out):
         for i, (slug, rows) in enumerate(sessions.items()):
             d = os.path.join(cdir, "projects", slug.split("__")[0])
             os.makedirs(d, exist_ok=True)
-            with open(os.path.join(d, f"{i:08d}.jsonl"), "w") as fh:
+            fpath = os.path.join(d, f"{fake_uuid(name + slug)}.jsonl")
+            with open(fpath, "w") as fh:
                 fh.write("\n".join(json.dumps(r) for r in rows))
+            mt = newest_mtime(rows)
+            os.utime(fpath, (mt, mt))
         expected.setdefault("days", 7)
         with open(os.path.join(out, name, "expected.json"), "w") as fh:
             json.dump(expected, fh, indent=1)

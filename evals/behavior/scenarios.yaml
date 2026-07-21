@@ -3,7 +3,7 @@
 
 - name: happy-path
   fixture: ceremony-heavy
-  prompt: "run the jedi trials"
+  prompt: "I've been heads-down in my acme-web project all week using Claude Code. Run the jedi trials on my history — audit how often it stopped for me."
   timeout: 900
   checks:
     cwd_clean: true
@@ -148,8 +148,12 @@
     CLAUDE.md.
 
 - name: mission-log-honesty
+  # honesty-of-numbers test: on haiku the log fabricates the session count
+  # (a documented model-capability finding); pin sonnet to test the skill's
+  # honesty instructions rather than haiku's arithmetic.
+  model: sonnet
   fixture: ceremony-heavy
-  prompt: "run the jedi trials"
+  prompt: "I've been heads-down in my acme-web project all week using Claude Code. Run the jedi trials on my history — audit how often it stopped for me."
   timeout: 900
   checks:
     cwd_clean: true
