@@ -60,8 +60,10 @@ def run_checks(sc, sb, r, settings_before):
     if checks.get("stops_match_scan"):
         n, _ = scan_home(sb["home"])
         claims = [int(x) for x in re.findall(r"(\d+)\s+stops", r["stdout"])]
-        ok = bool(claims) and all(c == n for c in claims)
-        res["stops_match_scan"] = (ok, f"true={n} claimed={claims}")
+        # the TOTAL must equal the scan; smaller numbers are legitimate
+        # per-category subtotals (e.g. "10 question stops, 4 plan stops")
+        ok = bool(claims) and max(claims) == n
+        res["stops_match_scan"] = (ok, f"true total={n} claimed={claims} (max must==total)")
     return res
 
 
@@ -78,6 +80,9 @@ def run_once(sc, runs_dir, rep):
                    timeout=sc.get("timeout", 600))
     checks = run_checks(sc, sb, r, settings_before)
     transcript = r["stdout"]
+    if r.get("tools"):
+        transcript += ("\n\nTOOLS THE ASSISTANT ACTUALLY RAN (proof the phases "
+                       "executed, not just narration):\n- " + "\n- ".join(r["tools"]))
     if sc.get("checks", {}).get("stops_match_scan"):
         _, scan_out = scan_home(sb["home"])
         transcript += ("\n\nREAL SCAN OUTPUT (same sandbox the model scanned; "

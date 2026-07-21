@@ -3,6 +3,7 @@
 make_sandbox(fixture_name) -> {"home": ..., "cwd": ...}
 run_claude(prompt, sandbox)  -> {"stdout": ..., "stderr": ..., "code": ...}
 """
+import json
 import os
 import shutil
 import subprocess
@@ -61,13 +62,55 @@ def make_sandbox(fixture_name):
     return {"home": home, "cwd": cwd, "bin": bindir}
 
 
+def _tool_summary(name, inp):
+    inp = inp or {}
+    if name == "Bash":
+        return f"Bash: {str(inp.get('command',''))[:140]}"
+    if name in ("Write", "Edit", "MultiEdit", "Read", "NotebookEdit"):
+        return f"{name}: {inp.get('file_path') or inp.get('path','')}"
+    if name == "Skill":
+        return f"Skill: {inp.get('skill','')}"
+    return f"{name}: {json.dumps(inp)[:120]}"
+
+
+def _parse_stream(raw):
+    """Reconstruct the assistant's narration text and the list of tools it ran
+    from claude -p --output-format stream-json (JSONL)."""
+    texts, tools = [], []
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if obj.get("type") == "assistant":
+            for c in (obj.get("message") or {}).get("content") or []:
+                if not isinstance(c, dict):
+                    continue
+                if c.get("type") == "text":
+                    texts.append(c.get("text", ""))
+                elif c.get("type") == "tool_use":
+                    tools.append(_tool_summary(c.get("name", ""), c.get("input")))
+        elif obj.get("type") == "result" and obj.get("result"):
+            texts.append(obj["result"])
+    return "\n".join(t for t in texts if t), tools
+
+
 def run_claude(prompt, sandbox, model=None, timeout=600):
     model = model or os.environ.get("EVAL_MODEL", "haiku")
     env = dict(os.environ, HOME=sandbox["home"],
                PATH=sandbox["bin"] + os.pathsep + os.environ.get("PATH", ""))
     env.pop("CLAUDECODE", None)  # allow nested runs
+    # stream-json exposes the tool calls (scan.py, build_page.py, …) so the judge
+    # can verify the work actually ran, not just the narration claiming it did
     p = subprocess.run(["claude", "-p", prompt, "--model", model,
-                        "--dangerously-skip-permissions"],
+                        "--dangerously-skip-permissions",
+                        "--output-format", "stream-json", "--verbose"],
                        cwd=sandbox["cwd"], env=env,
                        capture_output=True, text=True, timeout=timeout)
-    return {"stdout": p.stdout, "stderr": p.stderr, "code": p.returncode}
+    text, tools = _parse_stream(p.stdout)
+    if not text:  # fall back to raw if the format ever changes, so checks don't break
+        text = p.stdout
+    return {"stdout": text, "tools": tools, "stderr": p.stderr, "code": p.returncode}
