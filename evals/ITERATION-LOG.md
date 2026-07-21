@@ -77,6 +77,48 @@ enforced guarantee.
 
 ---
 
+## Iteration 4 — pass-rate exposed flaky evals (harness bugs vs. real variance)
+
+The most important robustness lesson. Running every behavior scenario **3×**
+(`--repeat 3`) instead of once surfaced three scenarios that a single run had
+been hiding:
+
+```
+happy-path          FLAKY  1/3
+demo-mode-integrity FLAKY  2/3
+mission-log-honesty FLAKY  2/3
+```
+
+A flaky eval is worse than a failing one — it passes just often enough to lull
+you. The discipline is: **read every failing rep and classify it** before
+touching anything. Here, the three split into two kinds:
+
+**Harness bugs (fixed — the eval was wrong, not the skill):**
+
+- `demo-mode` — the judge had actually answered `{"pass": true}`, but its JSON
+  contained `\'` escapes (which LLMs emit and JSON forbids), so our parser threw
+  and scored it a fail. Fixed `judges.py` to tolerate that + a regex fallback.
+- `happy-path` — the judge kept saying "no evidence the phases actually ran," and
+  it was right to be suspicious: we ran `claude -p` in **text-only** mode, so the
+  judge never saw the `scan.py` / `build_page.py` tool calls that did the work.
+  Switched the harness to `stream-json` and now hand the judge the real tool list
+  as evidence. (The skill was fine; the judge was blindfolded.)
+- `mission-log` — a deterministic check required every "N stops" in the output to
+  equal the total, which wrongly failed correct per-category subtotals like
+  "10 question stops, 4 plan stops." Changed it to compare the total only.
+
+**Real model variance (kept — the eval was right):**
+
+- `mission-log` also failed one rep for a _genuine_ reason: the model's prose said
+  "17 stops across one 2-day session" while its own banner correctly said
+  "2 sessions" — a real self-contradiction the judge caught. No harness fix
+  removes that; it's honest residual variance on the model, and the scenario
+  correctly flags it when it happens.
+
+After the harness fixes, all three re-ran green (2/2 each). Lesson: **most
+flakiness is your measurement, not the thing measured — but not all of it, so
+you have to read the failures, never just re-run until green.**
+
 ## How to run your own iteration
 
 1. Add a fixture in `evals/fixtures/generate.py` (deterministic ground truth) or
