@@ -1,3 +1,31 @@
+# Eval robustness + iteration pass — 2026-07-21
+
+Made the suites robust and iterative, and used them to drive a real fix.
+
+- **Pass-rate (flakiness):** `run_behavior.py --repeat N` (default 3) runs each
+  scenario N times and reports a pass-rate; 0<k<N is flagged FLAKY. A scenario
+  isn't "green" until N/N.
+- **Local report:** `evals/report.py` → `evals/results/report.html`, a
+  self-contained page (pass-rate bars, expandable per-run judge reasoning,
+  per-run trend). Regenerated at the end of every run. Braintrust stays the
+  cross-run diff surface.
+- **Real red→green (secret leak):** new `secret-redaction` deterministic
+  scenario FAILED against shipped `scan.py` — secrets in approved commands
+  (ghp_…, sk_live_…, in-URL creds) flowed verbatim into card evidence and the
+  transmission. Fixed with pattern-based `_redact()` in scan.py; scenario +
+  3 unit tests now lock it. Committed as a RED commit then a GREEN commit
+  (`7501a38` → `c79b736`); walkthrough in `evals/ITERATION-LOG.md`.
+- **Two judgment locks (green first try):** `batch-not-silence` (don't silence a
+  high-free-text gate) and `narrow-allow` (scoped allow rule, never `Bash(*)`)
+  both passed against current SKILL.md — the prompt already handled them; now
+  regression-locked. Honest outcome: a green-first-try eval still earns its keep.
+- **Skipped the Braintrust tracing wizard** (`curl … setup.sh | sh`): no hosted
+  app to instrument, and it's the exact remote-exec pattern this tool refuses.
+
+Fixtures now number 15; behavior scenarios 9. Decided NOT to instrument tracing.
+
+---
+
 # Eval suite (deterministic + behavior, Braintrust) — 2026-07-20
 
 Built two eval suites under `evals/` (spec + plan in `docs/superpowers/`), both
