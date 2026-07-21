@@ -83,6 +83,12 @@ Invoke `scan.py`, `build_page.py`, `assets/template.html`, and `examples/*` by
 **absolute path** from this skill's own directory — the cwd is usually the user's
 project, not here. (Paths below are shown relative for brevity.)
 
+`scan.py` redacts common secrets (tokens, API keys, in-URL credentials) from
+command text before writing them, so card evidence and the transmission carry
+`‹redacted›` in place of a credential. It's pattern-based, not exhaustive — if
+you notice an unmasked secret in a command detail, mask it before showing the
+card and don't paste it into a transmission.
+
 1. **Scan** (deterministic): `python3 scripts/scan.py --days 7 --out interventions.json`
    — parses `~/.claude/projects/*/*.jsonl`, emits every intervention event with the
    skill in effect, which option the user picked, and `wait_s` (how long Claude sat

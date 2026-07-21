@@ -42,6 +42,39 @@ EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 NOPROMPT_MODES = {"bypassPermissions", "auto"}  # nothing prompts in these modes
 HOME = os.path.expanduser("~")
 
+# The map surfaces command history as card evidence, and the transmission block
+# is copied between sessions — so any credential captured in a command must be
+# masked here, at the source, before it can reach cards.json / map.html.
+REDACTED = "‹redacted›"
+_SECRET_PATTERNS = [
+    re.compile(r"\bghp_[A-Za-z0-9]{20,}\b"),
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"),
+    re.compile(r"\b(?:gho|ghs|ghu|ghr)_[A-Za-z0-9]{20,}\b"),
+    re.compile(r"\b[sr]k_(?:live|test)_[A-Za-z0-9]{10,}\b"),   # Stripe
+    re.compile(r"\bsk-[A-Za-z0-9\-]{20,}\b"),                  # OpenAI/Anthropic-style
+    re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"),           # Slack
+    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),                       # AWS access key id
+    re.compile(r"\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{6,}\b"),  # JWT
+    re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._\-]{20,}"),
+]
+# credentials embedded in a URL: scheme://user:SECRET@host
+_URL_CRED = re.compile(r"(https?://[^:@/\s]+:)([^@/\s]+)(@)")
+# key=VALUE / "token": "VALUE" style assignments with a long opaque value
+_ASSIGN = re.compile(
+    r"(?i)((?:api[_-]?key|secret|token|password|passwd|access[_-]?key|auth[_-]?token)"
+    r"[\"'\s]*[=:]\s*[\"']?)([A-Za-z0-9._\-/+]{12,})")
+
+
+def _redact(s):
+    if not s or not isinstance(s, str):
+        return s
+    s = _URL_CRED.sub(r"\1" + REDACTED + r"\3", s)
+    s = _ASSIGN.sub(lambda m: m.group(1) + REDACTED, s)
+    for pat in _SECRET_PATTERNS:
+        s = pat.sub(REDACTED, s)
+    return s
+
+
 _allow_cache = {}
 def _load_allow(path):
     if path not in _allow_cache:
@@ -258,6 +291,16 @@ def _in_window(e):
         return True
 
 events = [e for e in events if _in_window(e)]
+
+# redact secrets from every human-readable text field before anything downstream
+# (build_page.py, the transmission) can render them
+_TEXT_FIELDS = ("detail", "command", "result", "plan_head", "selected", "question")
+for e in events:
+    for k in _TEXT_FIELDS:
+        if isinstance(e.get(k), str):
+            e[k] = _redact(e[k])
+    if isinstance(e.get("questions"), list):
+        e["questions"] = [_redact(q) for q in e["questions"]]
 
 # resuming a conversation copies its earlier history into a NEW session file, so
 # the same event can appear in two files — dedupe by (type, timestamp, subject),

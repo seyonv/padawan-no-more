@@ -124,5 +124,30 @@ class TestApprovalDedupAndScope(unittest.TestCase):
         self.assertEqual(of_type(data, "approval"), [])
 
 
+class TestSecretRedaction(unittest.TestCase):
+    """Command history becomes card evidence and travels in the transmission,
+    so credentials in commands must be masked before scan.py writes them."""
+
+    def _blob(self, cmd):
+        rows = [assistant([{"id": "t1", "name": "Bash", "input": {"command": cmd}}]),
+                result("t1", "ok")]
+        import json
+        return json.dumps(run_scan({"-proj-app": rows}, settings={"allow": []}))
+
+    def test_github_token_in_url_redacted(self):
+        tok = "ghp_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"
+        blob = self._blob(f"git push https://x-access-token:{tok}@github.com/a/b.git")
+        self.assertNotIn(tok, blob)
+
+    def test_inline_secret_env_redacted(self):
+        key = "sk_live_" + "51H8xEXAMPLEtokenABCDEFGHIJKLMN"  # split so scanners don't flag the fake
+        blob = self._blob(f"STRIPE_SECRET_KEY={key} npm run seed")
+        self.assertNotIn(key, blob)
+
+    def test_ordinary_command_untouched(self):
+        blob = self._blob("git commit -m 'add refund endpoint'")
+        self.assertIn("add refund endpoint", blob)
+
+
 if __name__ == "__main__":
     unittest.main()
