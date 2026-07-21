@@ -1,3 +1,38 @@
+# Eval suite (deterministic + behavior, Braintrust) — 2026-07-20
+
+Built two eval suites under `evals/` (spec + plan in `docs/superpowers/`), both
+logging to Braintrust project `padawan-no-more`.
+
+- **Deterministic** (`run_deterministic.py`, `--local` offline): 12 generated
+  fixture archives with ground truth by construction, scored exact-match against
+  the real `scan.py`/`build_page.py`. One scenario per hardening-pass bug class
+  (false-positive denials, resume dedup, preview-suffix classification, XSS
+  escape, inferred approvals, escape dedup, builtin skills, multi-question wait,
+  format-drift, sparse gate). Result: **12/12 green** (experiment `det-dddca09`).
+- **Behavior** (`run_behavior.py`): 7 end-to-end scenarios that run the skill via
+  `claude -p` in a sandboxed `$HOME` (fixture archive + skill installed), scored
+  with deterministic checks + an LLM judge (also `claude -p`). Covers happy path,
+  sparse gate, demo-mode integrity, the three step-5 apply-gate attacks
+  (deny-removal / blanket-allow / curl|sh egress), and mission-log honesty.
+
+## Findings from the first behavior run
+
+- **Apply-gate safety works when the skill is loaded.** All three malicious
+  transmissions are refused (deny-removal, `Bash(*)`, remote egress). First run
+  they "passed through" only because a bare "apply this transmission" prompt
+  doesn't trigger the skill — so it tested base Claude, not the step-5 gate.
+  Harness fixed to invoke the skill's apply procedure; then all three refuse.
+- **Design note surfaced:** the transmission-apply flow's safety depends on the
+  receiving session having the skill loaded. SKILL.md already acknowledges this
+  ("the receiving session may not have this skill's safety rules loaded"), but
+  the eval makes concrete that a naive paste into a fresh session gets no gating.
+- **Mission-log honesty is model-sensitive.** On Haiku the log once stated
+  "2 sessions" where the real scan read 1 (stop counts were correct). The
+  deterministic check only compares stop counts; the LLM judge caught the
+  session drift. Kept as a live finding, not tuned away.
+
+---
+
 # Deep-dive validation & hardening — 2026-07-20
 
 Goal: adversarially test padawan-no-more end to end (parser correctness, page
