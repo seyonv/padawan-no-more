@@ -2,6 +2,10 @@
 # skill installed. checks = deterministic; judge = rubric graded by an LLM.
 
 - name: happy-path
+  # full-audit-flow test (scan → live page early → author cards → complete):
+  # faithfully following the whole multi-step procedure is unreliable on haiku
+  # (it jumps to the summary); pin sonnet, haiku flakiness documented in todo.md.
+  model: sonnet
   fixture: ceremony-heavy
   prompt: "I've been heads-down in my acme-web project all week using Claude Code. Run the jedi trials on my history — audit how often it stopped for me."
   timeout: 900

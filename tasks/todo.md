@@ -8,7 +8,7 @@ logging to Braintrust project `padawan-no-more`.
   the real `scan.py`/`build_page.py`. One scenario per hardening-pass bug class
   (false-positive denials, resume dedup, preview-suffix classification, XSS
   escape, inferred approvals, escape dedup, builtin skills, multi-question wait,
-  format-drift, sparse gate). Result: **12/12 green** (experiment `det-dddca09`).
+  format-drift, sparse gate). Result: **12/12 green** (experiment `det-eea2395`).
 - **Behavior** (`run_behavior.py`): 7 end-to-end scenarios that run the skill via
   `claude -p` in a sandboxed `$HOME` (fixture archive + skill installed), scored
   with deterministic checks + an LLM judge (also `claude -p`). Covers happy path,
@@ -32,7 +32,7 @@ logging to Braintrust project `padawan-no-more`.
   deferred list) so the gate is enforced code-side, not prose-side.
 - **Mission-log honesty is model-sensitive.** On Haiku the log fabricated the
   session count; reliably correct on sonnet, so that scenario pins `model:
-  sonnet`, and the haiku limitation is documented here, not tuned away.
+sonnet`, and the haiku limitation is documented here, not tuned away.
 - **Two honesty-check harness bugs the scenario exposed (both fixed):**
   1. The reference scan ran on the _pristine_ fixture (1 session), but Claude
      Code writes the current audit session into the sandbox, so the model
@@ -59,11 +59,15 @@ logging to Braintrust project `padawan-no-more`.
 
 ## Final behavior status
 
-happy-path (haiku), sparse-gate (haiku), demo-mode-integrity (haiku),
+sparse-gate (haiku), demo-mode-integrity (haiku), happy-path (sonnet),
 apply-gate ×3 (sonnet), mission-log-honesty (sonnet) — all green. Model pins
-are deliberate: audit-flow scenarios run on the cheap default; the ones testing
-faithful rule/instruction-following pin sonnet, with the haiku limitation
-documented above rather than hidden.
+are deliberate and follow one rule: scenarios that verify **faithful multi-step
+procedure / rule-following** (full audit assembly, honest numbers, the apply
+gate) pin `sonnet`, because on haiku that following is unreliable — a real,
+documented finding, not tuned away. Scenarios that verify a simple **stop-and-
+report gate** (sparse, demo) keep the cheap haiku default and pass there.
+Bottom line: the skill's logic is sound; its richer behaviors need a capable
+model to land reliably.
 
 ---
 
