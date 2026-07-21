@@ -50,12 +50,21 @@ def make_sandbox(fixture_name):
             with open(dst, "w") as fh:
                 fh.write(p.stdout.strip())
             os.chmod(dst, 0o600)
-    return {"home": home, "cwd": cwd}
+    # no-op `open`/`xdg-open` shims so eval runs never pop real browser tabs
+    bindir = os.path.join(base, "bin")
+    os.makedirs(bindir)
+    for shim in ("open", "xdg-open"):
+        sp = os.path.join(bindir, shim)
+        with open(sp, "w") as fh:
+            fh.write("#!/bin/sh\nexit 0\n")
+        os.chmod(sp, 0o755)
+    return {"home": home, "cwd": cwd, "bin": bindir}
 
 
 def run_claude(prompt, sandbox, model=None, timeout=600):
     model = model or os.environ.get("EVAL_MODEL", "haiku")
-    env = dict(os.environ, HOME=sandbox["home"])
+    env = dict(os.environ, HOME=sandbox["home"],
+               PATH=sandbox["bin"] + os.pathsep + os.environ.get("PATH", ""))
     env.pop("CLAUDECODE", None)  # allow nested runs
     p = subprocess.run(["claude", "-p", prompt, "--model", model,
                         "--dangerously-skip-permissions"],
