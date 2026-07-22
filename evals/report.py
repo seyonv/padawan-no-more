@@ -122,6 +122,20 @@ def _passbar(rate, n_pass, n):
 
 def _behavior_card(s, ymeta):
     ym = ymeta.get(s["name"], {})
+    if s.get("pending"):  # defined in scenarios.yaml but not in the latest run
+        body = (
+            _field("Why this matters",
+                   f'{_chip(ym.get("bucket",""),"bucket")} {esc(ym.get("why",""))}')
+            + _field("Input", f'<div class="muted">fixture: '
+                     f'<code>{esc(ym.get("fixture"))}</code> · model: '
+                     f'<code>{esc(ym.get("model") or "haiku")}</code></div>'
+                     f'<div class="prompt">“{esc(ym.get("prompt",""))}”</div>')
+            + _field("Expected (grading rubric)",
+                     f'<div class="rubric">{esc(ym.get("rubric",""))}</div>')
+            + _field("Actual &amp; grading",
+                     '<span class="muted">not included in the latest run</span>'))
+        return _card("—", s["name"], ym.get("bucket", ""),
+                     '<span class="rate muted">pending</span>', body, True)
     rate, ok = s["pass_rate"], s["pass_rate"] == 1.0
     status = "PASS" if ok else ("FLAKY" if s.get("flaky") else "FAIL")
     bucket = s.get("bucket") or ym.get("bucket", "")
@@ -249,8 +263,12 @@ def build():
                              for r in det[-1]["data"]))
     overall_ok = bool(beh_green and det_green)
 
-    beh_cards = "".join(_behavior_card(s, ymeta)
-                        for s in beh[-1]["data"].get("scenarios", [])) if beh else \
+    # show every DEFINED scenario, even if the latest run didn't include it
+    latest_scen = beh[-1]["data"].get("scenarios", []) if beh else []
+    have = {s["name"] for s in latest_scen}
+    ordered = list(latest_scen) + [{"name": n, "pending": True}
+                                   for n in ymeta if n not in have]
+    beh_cards = "".join(_behavior_card(s, ymeta) for s in ordered) if ordered else \
         "<p class='muted'>No behavior runs yet.</p>"
     det_cards = "".join(_det_card(r, r["name"]) for r in det[-1]["data"]) if det else \
         "<p class='muted'>No deterministic runs yet.</p>"
