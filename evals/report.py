@@ -313,24 +313,130 @@ def _table(rows):
     return "".join(body)
 
 
-INTRO = """
-<details class="intro"><summary>New to evals? Read this first ▾</summary>
+# themes group the many fine-grained buckets into a handful of ideas a newcomer
+# can hold in their head; each fine bucket string maps to one theme.
+THEMES = [
+    ("Getting the numbers right", "The whole map is built on counts — stops, "
+     "waiting time, how often you picked the recommended option. If the parser "
+     "miscounts, every conclusion downstream is wrong.",
+     ["counting + first-option rate", "answer classification",
+      "classification at scale", "cross-file dedup", "wait attribution",
+      "builtin filtering + attribution", "core functionality"]),
+    ("Not crying wolf", "The tool should only flag real interruptions. It must "
+     "NOT invent an approval on a permissive machine, or count the words "
+     "'has been denied' inside a quoted file as a real denial.",
+     ["approval false-positive guard", "denial false-positive guard",
+      "approval detection", "approval detection at scale"]),
+    ("Telling the truth", "Every number shown must be real — pulled from your "
+     "actual scan, never invented, and never the demo's example numbers "
+     "presented as yours.",
+     ["honesty"]),
+    ("Security", "The tool reads your command history and hands you changes to "
+     "paste back. It must scrub secrets from that history, escape hostile text "
+     "so the map can't run code, and refuse a pasted 'fix' that would delete a "
+     "safety rule, hand over broad permissions, or run a remote script.",
+     ["security / secret redaction", "security / output escaping",
+      "apply-time security"]),
+    ("Good judgment, not just detection", "Finding a problem isn't enough — it "
+     "must propose the RIGHT fix. Silence a gate that's real signal? No, batch "
+     "it. Grant blanket Bash(*) to stop prompts? No, a narrow rule.",
+     ["judgment quality"]),
+    ("Knowing when to stop", "With too little data it should decline to build a "
+     "thin, misleading map; if the transcript format changed, it should warn "
+     "rather than silently report zero.",
+     ["guardrail", "guardrail: sparse gate", "format-drift warning",
+      "interruption dedup"]),
+]
+
+
+def _theme_for(bucket):
+    for name, _desc, buckets in THEMES:
+        if bucket in buckets:
+            return name
+    return "Other"
+
+
+def _explainer(rows):
+    # group actual scenarios under each theme so the list is always accurate
+    by_theme = {}
+    for r in rows:
+        by_theme.setdefault(_theme_for(r["bucket"]), []).append(r)
+    theme_html = []
+    for name, desc, _b in THEMES:
+        scen = by_theme.get(name, [])
+        chips = " ".join(f'<span class="sc">{esc(s["name"])}</span>' for s in scen)
+        theme_html.append(
+            f'<div class="theme"><div class="thead">{esc(name)} '
+            f'<span class="tcount">{len(scen)} scenario'
+            f'{"s" if len(scen)!=1 else ""}</span></div>'
+            f'<div class="tdesc">{esc(desc)}</div>'
+            f'<div class="scs">{chips}</div></div>')
+    return f"""
+<details class="intro" open><summary>Start here — what is this page, and what is it testing? ▾</summary>
 <div class="introbody">
-<p>An <b>eval</b> is an automated test for behavior we care about. Each row is one
-<b>scenario</b> — a specific case. Click it to expand a spec-like view:</p>
+
+<h3>1 · What the tool being tested actually does</h3>
 <ul>
-<li><b>Why this matters</b> — the risk/case it covers (its <i>bucket</i>).</li>
-<li><b>Input</b> — the prompt and the actual <i>fixture</i> (the transcript history
-we feed the skill), rendered readably.</li>
-<li><b>Expected</b> — a rubric an LLM judge grades against (behavior), or exact
-numbers (the parser).</li>
-<li><b>Actual</b> — what happened.</li>
-<li><b>Grading</b> — pass/fail per criterion, plus the judge's reasoning.</li>
+<li><b>padawan-no-more</b> is a Claude Code skill. You ask it something like
+<i>"how often did you stop and wait for me this week?"</i></li>
+<li>It reads your local Claude Code history and finds every moment Claude
+<b>paused for a human</b> — a question dialog, a plan approval, a permission
+prompt you approved, a permission it was denied, or an Escape you pressed.</li>
+<li>It <b>traces each stop to its cause</b> (the exact line in a skill, a
+settings file, or CLAUDE.md that forced it) and builds an interactive map with
+ready-to-apply fix diffs you approve or reject — so Claude needs you less.</li>
+<li>It reports hard numbers about <i>your</i> week ("stopped 129 times, 9h
+waiting, 80% of the time you picked the option it recommended") and then
+proposes config changes. Everything runs locally; nothing is uploaded.</li>
 </ul>
-<p><b>Behavior</b> runs the whole skill end-to-end (slow, real model); each runs
-several times and the <b>pass-rate</b> (e.g. 3/3) guards against a lucky pass.
-<b>Deterministic</b> checks the parser against known-answer fixtures (fast, free).
-Use the search box and filters to slice the table; click a column header to sort.</p>
+
+<h3>2 · Why a tool like this needs evals</h3>
+<ul>
+<li>An <b>eval</b> is just an automated test for a behavior we care about —
+like a unit test, but for "does it do the <i>right thing</i>," not only "does
+the code run."</li>
+<li>This tool is only useful if you can <b>trust its numbers</b> and its
+proposed changes. A wrong count is misleading; an unsafe "fix" it applies to
+your config is dangerous. Those are exactly the things a human reviewer would
+eyeball — evals check them automatically, every time, so a change can't quietly
+break them.</li>
+<li>Each row in the table below is <b>one scenario</b>: a specific situation we
+put the tool in, with a known right answer, that passes or fails.</li>
+</ul>
+
+<h3>3 · The two kinds of test (the two suites)</h3>
+<ul>
+<li><b>Deterministic</b> — tests the <i>math</i>. We hand-write a fake
+transcript where we already know the correct answer (e.g. "exactly 10 questions,
+9 recommended picks, 2 denials") and check the parser produces exactly that.
+Fast, free, exact, run on every change.</li>
+<li><b>Behavior</b> — tests the <i>judgment</i>. We actually run the whole skill
+end-to-end with a real model and grade what it does — partly with automatic
+checks, partly with an <b>LLM judge</b> that reads the transcript against a
+written rubric. Slower and costs tokens, so it's run on demand. Because a real
+model is involved, each scenario runs several times and reports a
+<b>pass-rate</b> (e.g. 3/3); a 2/3 is <i>flaky</i> — right most of the time but
+slips sometimes, which is a real weakness, not noise.</li>
+</ul>
+
+<h3>4 · What we're actually testing — the buckets</h3>
+<p>Every scenario belongs to a <b>bucket</b> (shown in the table). Here are the
+themes those buckets fall under, and which scenarios cover each:</p>
+{"".join(theme_html)}
+
+<h3>5 · How to read one scenario</h3>
+<ul>
+<li><b>Why this matters</b> — the risk or case it covers.</li>
+<li><b>Input</b> — the prompt and the actual <i>fixture</i> (the fake transcript
+history we feed in), rendered readably: ❓ questions, ↳ your answers, ⌘ commands,
+⛔ denials, ⚙ the permission settings in effect.</li>
+<li><b>Expected</b> — the rubric the judge grades against (behavior) or the exact
+numbers required (deterministic).</li>
+<li><b>Actual</b> — what happened, per run.</li>
+<li><b>Grading</b> — pass/fail broken out by criterion, plus the judge's reasoning.</li>
+</ul>
+<p class="muted">Use the search box and the suite/status filters to slice the
+table; click any column header to sort.</p>
 </div></details>
 """
 
@@ -354,7 +460,7 @@ def build():
 <header><div><h1>⚔ Eval results</h1><div class="sub">{" · ".join(meta)} · {len(rows)} scenarios · {n_pass}/{len(graded)} passing</div></div>
 <div class="overall {'ok' if overall_ok else 'bad'}">{'All green' if overall_ok else 'Attention needed'}</div></header>
 <main>
-{INTRO}
+{_explainer(rows)}
 <div class="controls">
 <input id="q" placeholder="search scenarios, buckets…" oninput="flt()">
 <span class="fg" id="fsuite"><b>suite</b>
@@ -432,7 +538,16 @@ code{color:var(--saber);font-size:.92em}
 .intro{background:var(--card);border:1px solid var(--edge);border-radius:10px;margin:16px 0}
 .intro>summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none}
 .intro>summary::-webkit-details-marker{display:none}
-.introbody{padding:0 18px 14px}.introbody p{margin:8px 0}.introbody ul{margin:8px 0;padding-left:18px}
+.introbody{padding:0 20px 18px}.introbody p{margin:8px 0}.introbody ul{margin:8px 0;padding-left:20px}
+.introbody li{margin:5px 0}
+.introbody h3{font-size:14px;margin:20px 0 6px;color:var(--saber);font-weight:650}
+.theme{background:var(--card2);border-radius:8px;padding:10px 13px;margin:8px 0}
+.thead{font-weight:650;font-size:13.5px}
+.tcount{color:var(--mut);font-weight:400;font-size:12px;margin-left:6px}
+.tdesc{color:var(--ink);font-size:13px;margin:4px 0 7px}
+.scs{display:flex;flex-wrap:wrap;gap:5px}
+.sc{font-size:11.5px;background:rgba(91,200,255,.12);color:var(--saber);
+padding:2px 8px;border-radius:10px;font-family:ui-monospace,monospace}
 .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:14px 0}
 #q{flex:1;min-width:220px;background:var(--card);border:1px solid var(--edge);border-radius:8px;
 color:var(--ink);padding:9px 12px;font-size:14px}
