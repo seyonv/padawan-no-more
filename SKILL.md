@@ -31,14 +31,24 @@ it's ~zero on a permissive setup (e.g. `Bash(*)` allowed). Say "≈N prompts you
 likely approved (inferred)", never a hard count. The fix is a **narrowly-scoped**
 allow rule — `Bash(git commit *)`, not `Bash(*)`; the exact path family, not `Edit`
 blanket — and scope it right: a rule in **global** `~/.claude/settings.json` stops
-the prompt everywhere, a rule in a project `.claude/settings.json` only there. Group
-approvals by command family, and for each cluster offer the narrow rule as a variant
-(and, where it's broad, a reject-recommended note).
+the prompt everywhere, a rule in a project `.claude/settings.json` only there.
+**One narrow rule per command family, shown as literal syntax.** Group approvals
+by command family and author a **separate** allow rule for each — `Bash(git commit
+*)`, `Bash(npm test *)`, `Bash(docker build *)`, the exact path family for edits —
+and write the actual rule string into the card's diff. Never lump distinct
+families into one card or one wider rule to "cover them all" (that's how `Bash(*)`
+sneaks in); one family, one explicit narrow rule. Where a cluster can only be
+silenced broadly, show that rule with a reject-recommended note.
 
 **Core judgment rule — read the first-option rate before proposing a fix:**
 a gate whose answers are ≥80% first-option is ceremony (automate it: auto-decide +
 log); a gate with heavy free-text answers is extracting real intent (don't silence
-it — make it non-blocking when the user is away, and batch questions).
+it). **For a mostly-free-text gate the recommended fix must keep those questions
+being asked — batched and/or non-blocking-when-away — never auto-decided or
+removed.** If a single gate is mixed (some ceremony picks, some real free-text),
+split it: the recommended fix keeps the free-text questions asked; auto-decide is
+only ever for the ceremony (≥80%-first-option) subset, and never the headline of
+a fix for a high-signal gate.
 
 ## Mission log (how to narrate the run)
 
@@ -123,8 +133,11 @@ card and don't paste it into a transmission.
    - `~/.claude/settings.json` and project `.claude/settings.json` (allow/deny/ask)
    - for **`approval` clusters**, the `detail` is the command/path that prompted;
      group them by command family and confirm no existing allow-rule covers them,
-     then the fix is a narrow allow rule (see Overview) — global vs project scope
-     per where the user wants it silenced
+     then the fix is **one narrow allow rule per family, each written as literal
+     syntax in its own card's diff** (`Bash(git commit *)`, `Bash(npm test *)`,
+     the exact path family for edits) — never a single card lumping unrelated
+     families together (see Overview) — global vs project scope per where the
+     user wants it silenced
    - the SKILL.md of any skill that generated ≥5 dialogs — find the literal lines
      that mandate questions (e.g. "STOP. You MUST call AskUserQuestion")
    - `~/.claude/CLAUDE.md` rules that mandate skills or plan mode
