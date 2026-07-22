@@ -417,6 +417,67 @@ SCENARIOS = {
     "multi-question-wait": sc_multi_question_wait,
 }
 
+# For each fixture: what real situation it plants (`input`), which bucket/risk it
+# covers and why that's worth testing (`why`). Surfaced in the report so a reader
+# can see, per row, why the case exists — not just whether it passed.
+META = {
+    "ceremony-heavy": ("A busy week of mostly rubber-stamp Q&A: 10 questions (9 "
+        "answered with the recommended option), 4 plan approvals, 2 denials, 1 Escape.",
+        "counting + first-option rate", "The core numbers the whole map is built on — "
+        "if these are wrong, every downstream verdict is wrong."),
+    "signal-heavy": ("6 questions with a mix of free-text answers and option picks, "
+        "including the tricky `Label\" selected preview:` answer format.",
+        "answer classification", "Free-text vs option is the ceremony-vs-signal "
+        "distinction; the preview-suffix format silently broke classification once."),
+    "signal-heavy-rich": ("A 16-question design-heavy week where 12 answers are "
+        "substantive free-text (real intent), 4 are quick option picks.",
+        "classification at scale", "Feeds the batch-not-silence judgment test; also "
+        "checks classification holds on a realistic rich week."),
+    "locked-down-rich": ("A locked-down repo (empty allow-list) where the user "
+        "approved 8 command families (git commit, npm test, docker build, …) plus "
+        "6 questions and 2 denials.", "approval detection at scale",
+        "Feeds the narrow-allow judgment test; checks approvals are inferred correctly "
+        "when nothing is pre-allowed."),
+    "secret-redaction": ("Two approved commands carrying live-looking credentials: a "
+        "GitHub token in a git-push URL and an inline STRIPE_SECRET_KEY.",
+        "security / secret redaction", "The map surfaces command history and the "
+        "transmission travels between sessions — a leaked credential is a real breach."),
+    "sparse": ("A near-empty week: only 3 stops, below the 15-stop threshold.",
+        "guardrail: sparse gate", "Too little data should stop the audit, not produce "
+        "a thin, misleading map."),
+    "locked-down-allowlist": ("Empty allow-list with a few mutating commands that ran "
+        "successfully.", "approval detection", "Minimal check that uncovered mutating "
+        "tools are inferred as approved prompts."),
+    "permissive": ("A permissive setup with `Bash(*)`, `Write`, `Edit` all allowed.",
+        "approval false-positive guard", "On a permissive machine nothing should be "
+        "flagged as an approval — guards against crying wolf."),
+    "resumed-session": ("The same 4-question history copied into two session files "
+        "(what a resumed conversation looks like on disk).", "cross-file dedup",
+        "Resuming duplicates events across files; without dedup every stop (and its "
+        "wait) is double-counted."),
+    "denial-false-positive": ("One real denial, plus a Read result whose text merely "
+        "quotes the words 'has been denied' inside a file dump.",
+        "denial false-positive guard", "Substring-matching denial phrases would count "
+        "innocent file content as denials — this pins the prefix-anchored check."),
+    "xss-payload": ("A question whose text contains `</script><script>window.PWNED…`.",
+        "security / output escaping", "Transcript text is rendered into the HTML map; "
+        "unescaped, it executes arbitrary JS in the user's browser."),
+    "format-drift": ("6 question dialogs whose answer text is unparseable garbage "
+        "(as if Claude Code changed its transcript format).", "format-drift warning",
+        "A silent zero would look like 'no stops'; the scan must instead warn that the "
+        "format may have changed."),
+    "escape-dedup": ("An Escape interruption that accompanies a denial, plus a "
+        "standalone Escape.", "interruption dedup", "The 'for tool use' interruption "
+        "always shadows its denial; counting both double-reports one Escape."),
+    "builtin-commands": ("`/model` and `/clear` typed as commands, interleaved with "
+        "questions attributed to a real skill.", "builtin filtering + attribution",
+        "Builtins aren't skills; capturing them steals attribution from the real gate, "
+        "and /clear must reset the active skill."),
+    "multi-question-wait": ("One dialog asking 3 questions at once, with a 5-minute "
+        "wait.", "wait attribution", "A multi-question dialog is one wait, not three — "
+        "otherwise blocked time is inflated 3×."),
+}
+
 
 def build_all(out):
     if os.path.isdir(out):
@@ -437,6 +498,9 @@ def build_all(out):
             mt = newest_mtime(rows)
             os.utime(fpath, (mt, mt))
         expected.setdefault("days", 7)
+        if name in META:
+            inp, bucket, why = META[name]
+            expected["input"], expected["bucket"], expected["why"] = inp, bucket, why
         with open(os.path.join(out, name, "expected.json"), "w") as fh:
             json.dump(expected, fh, indent=1)
     return out

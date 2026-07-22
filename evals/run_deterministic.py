@@ -103,11 +103,21 @@ def main():
     a = ap.parse_args()
     subprocess.run([sys.executable, os.path.join(ROOT, "evals/fixtures/generate.py"),
                     "--out", a.scenarios], check=True, capture_output=True)
+    meta_keys = ("input", "bucket", "why", "days", "build_map")
     rows = []
     for name in sorted(os.listdir(a.scenarios)):
         out, exp = run_scenario(os.path.join(a.scenarios, name))
         scores = score(out, exp)
-        rows.append({"name": name, "scores": scores})
+        actual = {"events by type": out["counts"], "first_option": out["first_option"],
+                  "kinds": out["kinds"], "wait seconds": round(out["wait_total"]),
+                  "skills seen": out["skills"]}
+        if out["approval_details"]:
+            actual["approval details"] = out["approval_details"]
+        rows.append({"name": name,
+                     "input": exp.get("input", ""), "bucket": exp.get("bucket", ""),
+                     "why": exp.get("why", ""),
+                     "expected": {k: v for k, v in exp.items() if k not in meta_keys},
+                     "actual": actual, "scores": scores})
         flat = {k: v["score"] for k, v in scores.items()}
         ok = all(flat.values())
         print(("PASS" if ok else "FAIL"), name)
@@ -133,10 +143,13 @@ def main():
     exp_h = braintrust.init(project="padawan-no-more", experiment=f"det-{sha}",
                             update=True)
     for r in rows:
-        exp_h.log(input=r["name"],
-                  output={k: v["detail"] for k, v in r["scores"].items()},
+        exp_h.log(input={"scenario": r["name"], "situation": r["input"]},
+                  expected=r["expected"],
+                  output=r["actual"],
                   scores={k: v["score"] for k, v in r["scores"].items()},
-                  metadata={"scenario": r["name"], "sha": sha})
+                  metadata={"scenario": r["name"], "sha": sha, "bucket": r["bucket"],
+                            "why": r["why"],
+                            "grading": {k: v["detail"] for k, v in r["scores"].items()}})
     print(exp_h.summarize())
     sys.exit(0 if all_ok else 1)
 

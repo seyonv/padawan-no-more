@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Build a self-contained local HTML report from evals/results/*.json.
+"""Build a self-contained, readable HTML report from evals/results/*.json.
 
   python3 evals/report.py            → writes evals/results/report.html
   open evals/results/report.html
 
-Reads every det-<sha>.json (deterministic) and beh-<sha>.json (behavior) dump
-the runners leave behind and renders scenarios × runs, red/green, pass-rates,
-judge reasoning, and a per-suite trend across runs. No dependencies, no network
-— just open the file. Both runners call build() at the end, so it stays fresh.
+Every scenario is shown as: what case it is and WHY it's worth testing, the
+INPUT we gave, the EXPECTED behavior, the ACTUAL result, and the GRADING broken
+down by criterion. No dependencies, no network — just open the file. Both runners
+call build() at the end, so it stays fresh.
 """
 import glob
 import html
@@ -16,26 +16,13 @@ import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULTS = os.path.join(ROOT, "evals", "results")
+FIXTURES = os.path.join(ROOT, "evals", "fixtures", "scenarios")
+SCENARIOS_YAML = os.path.join(ROOT, "evals", "behavior", "scenarios.yaml")
 
 
-def _normalize_beh(data):
-    """Accept both the current {sha, scenarios:[...]} shape and the older flat
-    list of single-run rows, so trend/history survives format changes."""
-    if isinstance(data, dict) and "scenarios" in data:
-        return data
-    scen = []
-    for r in data if isinstance(data, list) else []:
-        passed = r.get("checks_frac") == 1.0 and (r.get("judge") or {}).get("pass")
-        scen.append({"name": r.get("name", "?"), "model": r.get("model", "?"),
-                     "pass_rate": 1.0 if passed else 0.0,
-                     "n_pass": 1 if passed else 0, "n": 1, "flaky": False,
-                     "reps": [{"rep": 0, "passed": bool(passed),
-                               "checks_frac": r.get("checks_frac", 0),
-                               "judge": r.get("judge", {}), "checks": r.get("checks", {})}]})
-    return {"scenarios": scen, "repeat": 1}
+# ---------- data loading ----------
 
-
-def _load():
+def _load_results():
     det, beh = [], []
     for path in sorted(glob.glob(os.path.join(RESULTS, "*.json")),
                        key=os.path.getmtime):
@@ -44,9 +31,8 @@ def _load():
             data = json.load(open(path))
         except (OSError, ValueError):
             continue
-        rec = {"sha": base[4:-5], "mtime": os.path.getmtime(path)}
+        rec = {"sha": base[4:-5], "mtime": os.path.getmtime(path), "data": data}
         if base.startswith("det-"):
-            rec["data"] = data
             det.append(rec)
         elif base.startswith("beh-"):
             rec["data"] = _normalize_beh(data)
@@ -54,74 +40,167 @@ def _load():
     return det, beh
 
 
-def _chip(ok, label):
-    cls = "ok" if ok else "bad"
-    return f'<span class="chip {cls}">{html.escape(label)}</span>'
+def _normalize_beh(data):
+    if isinstance(data, dict) and "scenarios" in data:
+        return data
+    scen = []
+    for r in data if isinstance(data, list) else []:
+        passed = r.get("checks_frac") == 1.0 and (r.get("judge") or {}).get("pass")
+        scen.append({"name": r.get("name", "?"), "model": r.get("model", "?"),
+                     "pass_rate": 1.0 if passed else 0.0, "n_pass": int(bool(passed)),
+                     "n": 1, "flaky": False,
+                     "reps": [{"rep": 0, "passed": bool(passed),
+                               "checks_frac": r.get("checks_frac", 0),
+                               "judge": r.get("judge", {}), "checks": r.get("checks", {}),
+                               "stdout_tail": r.get("stdout", "")}]})
+    return {"scenarios": scen, "repeat": 1}
 
 
-def _behavior_section(beh):
-    if not beh:
-        return "<p class='muted'>No behavior runs yet.</p>"
-    latest = beh[-1]
-    scen = latest["data"].get("scenarios", [])
-    rows = []
-    for s in scen:
-        rate = s["pass_rate"]
-        status = "PASS" if rate == 1.0 else ("FLAKY" if s.get("flaky") else "FAIL")
-        ok = rate == 1.0
-        bar = f'<div class="bar"><i style="width:{rate*100:.0f}%"></i></div>'
-        reps_html = []
-        for x in s["reps"]:
-            marks = []
-            for k, v in x.get("checks", {}).items():
-                marks.append(f'{"✓" if v["ok"] else "✗"} {html.escape(k)}'
-                             + ("" if v["ok"] else f' — <span class="muted">'
-                                f'{html.escape(str(v["detail"])[:160])}</span>'))
-            j = x.get("judge", {})
-            jj = ("✓" if j.get("pass") else "✗") + " judge — " + \
-                 f'<span class="muted">{html.escape(str(j.get("reason",""))[:400])}</span>'
-            reps_html.append(
-                f'<div class="rep {"ok" if x["passed"] else "bad"}">'
-                f'<b>rep {x["rep"]}</b> {"pass" if x["passed"] else "fail"}'
-                f'<div class="checkline">{"<br>".join(marks + [jj])}</div></div>')
-        rows.append(
-            f'<details class="scen {"ok" if ok else "bad"}"><summary>'
-            f'{_chip(ok, status)} <b>{html.escape(s["name"])}</b> '
-            f'<span class="model">{html.escape(s["model"])}</span> {bar} '
-            f'<span class="rate">{s["n_pass"]}/{s["n"]}</span></summary>'
-            f'{"".join(reps_html)}</details>')
-    trend = _trend(beh, behavior=True)
-    return (f'<div class="meta">latest <code>beh-{html.escape(latest["sha"])}</code> · '
-            f'{len(scen)} scenarios · repeat {latest["data"].get("repeat","?")}</div>'
-            + "".join(rows) + trend)
+def _yaml_scenarios():
+    """name -> {prompt, rubric, bucket, why, fixture, model}. Best-effort: tries
+    PyYAML, falls back to a tiny hand parse so the report never hard-depends on it."""
+    try:
+        import yaml
+        out = {}
+        for s in yaml.safe_load(open(SCENARIOS_YAML)) or []:
+            cov = s.get("covers") or {}
+            out[s["name"]] = {"prompt": s.get("prompt", ""),
+                              "rubric": " ".join((s.get("judge") or "").split()),
+                              "bucket": cov.get("bucket", ""),
+                              "why": (cov.get("why") or "").strip(),
+                              "fixture": s.get("fixture"), "model": s.get("model")}
+        return out
+    except Exception:
+        return {}
 
 
-def _deterministic_section(det):
-    if not det:
-        return "<p class='muted'>No deterministic runs yet.</p>"
-    latest = det[-1]
-    rows = []
-    for r in latest["data"]:
-        scores = r.get("scores", {})
-        ok = all(v["score"] for v in scores.values()) if scores else False
-        checks = "<br>".join(
-            f'{"✓" if v["score"] else "✗"} {html.escape(k)}'
-            + ("" if v["score"] else f' — <span class="muted">'
-               f'{html.escape(str(v["detail"])[:160])}</span>')
-            for k, v in scores.items())
-        rows.append(
-            f'<details class="scen {"ok" if ok else "bad"}"><summary>'
-            f'{_chip(ok, "PASS" if ok else "FAIL")} <b>{html.escape(r["name"])}</b>'
-            f'</summary><div class="checkline">{checks}</div></details>')
-    trend = _trend(det, behavior=False)
-    return (f'<div class="meta">latest <code>det-{html.escape(latest["sha"])}</code> · '
-            f'{len(latest["data"])} scenarios</div>' + "".join(rows) + trend)
+def _fixture_expected(name):
+    p = os.path.join(FIXTURES, name, "expected.json")
+    try:
+        return json.load(open(p))
+    except (OSError, ValueError):
+        return None
+
+
+# ---------- html helpers ----------
+
+def esc(x):
+    return html.escape(str(x))
+
+
+def _chip(text, cls):
+    return f'<span class="chip {cls}">{esc(text)}</span>'
+
+
+def _kv(d):
+    """Render a dict as a compact key/value table."""
+    if not d:
+        return '<span class="muted">—</span>'
+    rows = "".join(
+        f'<tr><td class="k">{esc(k)}</td><td class="v"><code>{esc(_short(v))}'
+        f'</code></td></tr>' for k, v in d.items())
+    return f'<table class="kv">{rows}</table>'
+
+
+def _short(v, n=600):
+    s = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+    return s if len(s) <= n else s[:n] + " …"
+
+
+def _field(label, body):
+    return (f'<div class="field"><div class="flabel">{esc(label)}</div>'
+            f'<div class="fbody">{body}</div></div>')
+
+
+def _passbar(rate, n_pass, n):
+    cls = "ok" if rate == 1.0 else ("warn" if 0 < rate < 1 else "bad")
+    return (f'<span class="passbar"><i class="{cls}" style="width:{rate*100:.0f}%">'
+            f'</i></span><span class="rate">{n_pass}/{n}</span>')
+
+
+# ---------- sections ----------
+
+def _behavior_card(s, ymeta):
+    ym = ymeta.get(s["name"], {})
+    rate, ok = s["pass_rate"], s["pass_rate"] == 1.0
+    status = "PASS" if ok else ("FLAKY" if s.get("flaky") else "FAIL")
+    bucket = s.get("bucket") or ym.get("bucket", "")
+    why = s.get("why") or ym.get("why", "")
+    prompt = (s.get("input") or {}).get("prompt") or ym.get("prompt", "")
+    rubric = s.get("expected_rubric") or ym.get("rubric", "")
+    fixture = ym.get("fixture")
+    # actual + grading per rep
+    reps_html = []
+    for x in s["reps"]:
+        checks = "".join(
+            f'<div class="crit {"ok" if v["ok"] else "bad"}">'
+            f'{"✓" if v["ok"] else "✗"} <b>{esc(k)}</b>'
+            + ("" if v["ok"] else f' — <span class="muted">{esc(_short(v["detail"],200))}'
+               "</span>") + "</div>"
+            for k, v in (x.get("checks") or {}).items())
+        j = x.get("judge") or {}
+        checks += (f'<div class="crit {"ok" if j.get("pass") else "bad"}">'
+                   f'{"✓" if j.get("pass") else "✗"} <b>LLM judge</b> — '
+                   f'<span class="muted">{esc(_short(j.get("reason",""),360))}</span></div>')
+        tail = _short(x.get("stdout_tail", ""), 900)
+        reps_html.append(
+            f'<div class="rep {"ok" if x["passed"] else "bad"}">'
+            f'<div class="rephead">run {x["rep"]+1}: '
+            f'{"pass" if x["passed"] else "fail"}</div>'
+            f'<div class="grade">{checks}</div>'
+            f'<details class="raw"><summary>actual output (excerpt)</summary>'
+            f'<pre>{esc(tail)}</pre></details></div>')
+    body = (
+        _field("Why this matters", f'{_chip(bucket,"bucket")} {esc(why)}' if bucket
+               else esc(why))
+        + _field("Input", f'<div class="muted">fixture: <code>{esc(fixture)}</code> · '
+                 f'model: <code>{esc(s.get("model"))}</code></div>'
+                 f'<div class="prompt">“{esc(prompt)}”</div>')
+        + _field("Expected (grading rubric)", f'<div class="rubric">{esc(rubric)}</div>')
+        + _field("Actual &amp; grading (per run)", "".join(reps_html)))
+    return _card(status, s["name"], bucket, _passbar(rate, s["n_pass"], s["n"]), body, ok)
+
+
+def _det_card(r, name):
+    scores = r.get("scores", {})
+    ok = bool(scores) and all(v["score"] for v in scores.values())
+    exp = _fixture_expected(name) or {}
+    inp = r.get("input") or exp.get("input", "")
+    bucket = r.get("bucket") or exp.get("bucket", "")
+    why = r.get("why") or exp.get("why", "")
+    expected = r.get("expected") or {k: v for k, v in exp.items()
+                                      if k not in ("input", "bucket", "why", "days",
+                                                   "build_map")}
+    actual = r.get("actual")
+    grading = "".join(
+        f'<div class="crit {"ok" if v["score"] else "bad"}">'
+        f'{"✓" if v["score"] else "✗"} <b>{esc(k)}</b> — '
+        f'<span class="muted">{esc(_short(v["detail"],200))}</span></div>'
+        for k, v in scores.items())
+    body = (
+        _field("Why this matters", f'{_chip(bucket,"bucket")} {esc(why)}' if bucket
+               else esc(why))
+        + _field("Input", esc(inp) or '<span class="muted">synthetic transcript archive</span>')
+        + _field("Expected (scan output)", _kv(expected))
+        + (_field("Actual (scan output)", _kv(actual)) if actual else "")
+        + _field("Grading (by criterion)", f'<div class="grade">{grading}</div>'))
+    passbar = _passbar(1.0 if ok else 0.0, int(ok), 1)
+    return _card("PASS" if ok else "FAIL", name, bucket, passbar, body, ok)
+
+
+def _card(status, name, bucket, passbar, body, ok):
+    return (
+        f'<details class="scen {"ok" if ok else "bad"}"><summary>'
+        f'{_chip(status, "ok" if ok else ("warn" if status=="FLAKY" else "bad"))} '
+        f'<b>{esc(name)}</b>'
+        + (f' <span class="tag">{esc(bucket)}</span>' if bucket else "")
+        + f'<span class="spacer"></span>{passbar}</summary>'
+        f'<div class="cardbody">{body}</div></details>')
 
 
 def _trend(runs, behavior):
-    """Little bar-per-run of how many scenarios were fully green."""
     cells = []
-    for rec in runs[-12:]:
+    for rec in runs[-14:]:
         if behavior:
             scen = rec["data"].get("scenarios", [])
             green = sum(1 for s in scen if s["pass_rate"] == 1.0)
@@ -130,33 +209,70 @@ def _trend(runs, behavior):
             green = sum(1 for r in rec["data"]
                         if all(v["score"] for v in r.get("scores", {}).values()))
             total = len(rec["data"])
-        h = int(4 + (green / total * 44)) if total else 4
+        h = int(4 + (green / total * 42)) if total else 4
         full = total and green == total
-        cells.append(f'<div class="tcol" title="{html.escape(rec["sha"])}: '
-                     f'{green}/{total}"><i class="{"ok" if full else "bad"}" '
-                     f'style="height:{h}px"></i><span>{html.escape(rec["sha"][:5])}'
-                     f'</span></div>')
-    return f'<div class="trend"><div class="tlabel">green scenarios per run →</div>' \
-           f'<div class="trow">{"".join(cells)}</div></div>'
+        cells.append(f'<div class="tcol" title="{esc(rec["sha"])}: {green}/{total}">'
+                     f'<i class="{"ok" if full else "bad"}" style="height:{h}px"></i>'
+                     f'<span>{esc(rec["sha"][:5])}</span></div>')
+    return (f'<div class="trend"><div class="tlabel">fully-green scenarios per run →'
+            f'</div><div class="trow">{"".join(cells)}</div></div>')
+
+
+INTRO = """
+<details class="intro"><summary>New to evals? Read this first ▾</summary>
+<div class="introbody">
+<p>An <b>eval</b> is an automated test for behavior we care about. Each row below
+is one <b>scenario</b> — a specific case — and reads like a spec:</p>
+<ul>
+<li><b>Why this matters</b> — the risk or case this scenario covers (its
+<i>bucket</i>), so you can see why it's worth a test at all.</li>
+<li><b>Input</b> — the exact situation we hand the skill.</li>
+<li><b>Expected</b> — what a correct result looks like (for behavior runs this is a
+<i>rubric</i> an LLM judge grades against; for the parser it's exact numbers).</li>
+<li><b>Actual</b> — what actually happened.</li>
+<li><b>Grading</b> — pass/fail broken down by criterion, plus the judge's reasoning.</li>
+</ul>
+<p>The two suites: <b>Behavior</b> runs the whole skill end-to-end (slow, real
+model) and grades what it does; <b>Deterministic</b> checks the parser against
+fixtures whose right answer is known exactly (fast, free). Behavior scenarios run
+several times — the <b>pass-rate</b> (e.g. 3/3) guards against a lucky single pass.</p>
+</div></details>
+"""
 
 
 def build():
-    det, beh = _load()
-    beh_all_green = (beh and all(s["pass_rate"] == 1.0
-                                 for s in beh[-1]["data"].get("scenarios", [])))
-    det_all_green = (det and all(all(v["score"] for v in r.get("scores", {}).values())
-                                 for r in det[-1]["data"]))
-    overall = "All green" if (beh_all_green and det_all_green) else "Attention needed"
-    page = f"""<!doctype html><html><head><meta charset="utf-8">
+    det, beh = _load_results()
+    ymeta = _yaml_scenarios()
+    beh_green = (beh and all(s["pass_rate"] == 1.0
+                             for s in beh[-1]["data"].get("scenarios", [])))
+    det_green = (det and all(all(v["score"] for v in r.get("scores", {}).values())
+                             for r in det[-1]["data"]))
+    overall_ok = bool(beh_green and det_green)
+
+    beh_cards = "".join(_behavior_card(s, ymeta)
+                        for s in beh[-1]["data"].get("scenarios", [])) if beh else \
+        "<p class='muted'>No behavior runs yet.</p>"
+    det_cards = "".join(_det_card(r, r["name"]) for r in det[-1]["data"]) if det else \
+        "<p class='muted'>No deterministic runs yet.</p>"
+    beh_meta = (f'latest <code>beh-{esc(beh[-1]["sha"])}</code> · '
+                f'{len(beh[-1]["data"].get("scenarios",[]))} scenarios · '
+                f'repeat {beh[-1]["data"].get("repeat","?")}' if beh else "")
+    det_meta = (f'latest <code>det-{esc(det[-1]["sha"])}</code> · '
+                f'{len(det[-1]["data"])} scenarios' if det else "")
+
+    page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Padawan-No-More — eval results</title><style>{CSS}</style></head><body>
-<header><h1>⚔ Eval results</h1><div class="overall {'ok' if beh_all_green and det_all_green else 'bad'}">{overall}</div></header>
-<section><h2>Behavior <span class="muted">— skill run end-to-end via claude -p, N runs each</span></h2>
-{_behavior_section(beh)}</section>
-<section><h2>Deterministic <span class="muted">— scan.py / build_page.py vs known-answer fixtures</span></h2>
-{_deterministic_section(det)}</section>
-<footer>Regenerated on each run. Click a scenario to see every run's checks and judge reasoning.
-Braintrust holds the full history &amp; cross-run diffs.</footer></body></html>"""
+<header><div><h1>⚔ Eval results</h1><div class="sub">padawan-no-more · click any scenario to expand</div></div>
+<div class="overall {'ok' if overall_ok else 'bad'}">{'All green' if overall_ok else 'Attention needed'}</div></header>
+<main>
+{INTRO}
+<section><h2>Behavior <span class="muted">— the whole skill run end-to-end, graded by checks + an LLM judge</span></h2>
+<div class="meta">{beh_meta}</div>{beh_cards}{_trend(beh, True) if beh else ""}</section>
+<section><h2>Deterministic <span class="muted">— the parser vs. fixtures whose answer is known exactly</span></h2>
+<div class="meta">{det_meta}</div>{det_cards}{_trend(det, False) if det else ""}</section>
+<footer>Regenerated on every eval run. Braintrust holds full history &amp; cross-run diffs.</footer>
+</main></body></html>"""
     os.makedirs(RESULTS, exist_ok=True)
     out = os.path.join(RESULTS, "report.html")
     with open(out, "w") as fh:
@@ -165,40 +281,60 @@ Braintrust holds the full history &amp; cross-run diffs.</footer></body></html>"
 
 
 CSS = """
-:root{--bg:#12100e;--card:#1c1916;--ink:#efe7db;--mut:#9a8f80;--ok:#4caf6d;
---bad:#d0555a;--saber:#5bc8ff;--edge:#2c2621}
+:root{--bg:#12100e;--card:#1b1815;--card2:#232019;--ink:#efe7db;--mut:#9a8f80;
+--ok:#57b874;--warn:#e0a33c;--bad:#d0555a;--saber:#5bc8ff;--edge:#2c2621}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
-font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:0 0 60px}
-header{display:flex;align-items:center;gap:16px;padding:24px 32px;border-bottom:1px solid var(--edge)}
-h1{font-size:22px;margin:0}h2{font-size:16px;margin:28px 0 8px;font-weight:650}
-section{padding:0 32px}.muted{color:var(--mut);font-weight:400}
+font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:22px 30px;border-bottom:1px solid var(--edge);position:sticky;top:0;background:var(--bg);z-index:5}
+h1{font-size:21px;margin:0}.sub{color:var(--mut);font-size:13px;margin-top:2px}
+main{max-width:1000px;margin:0 auto;padding:0 30px 70px}
+h2{font-size:16px;margin:30px 0 6px;font-weight:650}.muted{color:var(--mut);font-weight:400}
 .overall{margin-left:auto;padding:6px 14px;border-radius:20px;font-weight:650;font-size:13px}
-.overall.ok{background:rgba(76,175,109,.16);color:var(--ok)}
+.overall.ok{background:rgba(87,184,116,.16);color:var(--ok)}
 .overall.bad{background:rgba(208,85,90,.16);color:var(--bad)}
-.meta{color:var(--mut);font-size:13px;margin:4px 0 12px}code{color:var(--saber)}
+.meta{color:var(--mut);font-size:13px;margin:2px 0 12px}code{color:var(--saber);font-size:.92em}
+.intro{background:var(--card);border:1px solid var(--edge);border-radius:10px;margin:16px 0 6px}
+.intro>summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none}
+.intro>summary::-webkit-details-marker{display:none}
+.introbody{padding:0 18px 14px;color:var(--ink)}.introbody p{margin:8px 0}
+.introbody ul{margin:8px 0;padding-left:18px}.introbody li{margin:4px 0}
 .scen{background:var(--card);border:1px solid var(--edge);border-left:3px solid var(--edge);
-border-radius:8px;margin:6px 0;padding:0}.scen.ok{border-left-color:var(--ok)}
-.scen.bad{border-left-color:var(--bad)}
-summary{cursor:pointer;padding:11px 14px;display:flex;align-items:center;gap:10px;list-style:none}
-summary::-webkit-details-marker{display:none}
-.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.03em}
-.chip.ok{background:rgba(76,175,109,.16);color:var(--ok)}
+border-radius:9px;margin:7px 0}.scen.ok{border-left-color:var(--ok)}.scen.bad{border-left-color:var(--bad)}
+.scen>summary{cursor:pointer;padding:12px 15px;display:flex;align-items:center;gap:10px;list-style:none}
+.scen>summary::-webkit-details-marker{display:none}.spacer{flex:1}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.03em;white-space:nowrap}
+.chip.ok{background:rgba(87,184,116,.16);color:var(--ok)}
+.chip.warn{background:rgba(224,163,60,.16);color:var(--warn)}
 .chip.bad{background:rgba(208,85,90,.16);color:var(--bad)}
-.model{font-size:11px;color:var(--mut);border:1px solid var(--edge);padding:1px 7px;border-radius:10px}
-.bar{flex:1;max-width:160px;height:6px;background:#332c26;border-radius:4px;overflow:hidden;margin-left:auto}
-.bar i{display:block;height:100%;background:var(--ok)}
-.scen.bad .bar i{background:var(--bad)}.rate{font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px}
-.rep{margin:0 14px 8px;padding:8px 12px;border-radius:6px;background:#241f1b;font-size:13px}
-.rep.bad{background:rgba(208,85,90,.08)}
-.checkline{margin-top:6px;color:var(--ink);font-size:13px}.checkline .muted{font-size:12px}
-.trend{margin:14px 0 8px}.tlabel{font-size:12px;color:var(--mut);margin-bottom:6px}
-.trow{display:flex;gap:10px;align-items:flex-end;height:60px}
+.chip.bucket{background:rgba(91,200,255,.14);color:var(--saber)}
+.tag{font-size:11px;color:var(--mut);border:1px solid var(--edge);padding:1px 8px;border-radius:10px}
+.passbar{display:inline-block;width:120px;height:6px;background:#332c26;border-radius:4px;overflow:hidden;vertical-align:middle}
+.passbar i{display:block;height:100%}.passbar i.ok{background:var(--ok)}
+.passbar i.warn{background:var(--warn)}.passbar i.bad{background:var(--bad)}
+.rate{font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px;margin-left:8px}
+.cardbody{padding:4px 15px 15px}
+.field{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:11px 0;border-top:1px solid var(--edge)}
+.flabel{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.prompt{margin-top:5px;font-style:italic}.rubric{color:var(--ink)}
+.kv{border-collapse:collapse;width:100%}.kv td{padding:3px 8px;vertical-align:top;border-bottom:1px solid var(--edge)}
+.kv .k{color:var(--mut);white-space:nowrap;width:1%}.kv .v code{color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.rep{background:var(--card2);border-radius:7px;padding:9px 12px;margin:7px 0}
+.rep.bad{background:rgba(208,85,90,.07)}
+.rephead{font-weight:650;font-size:13px;margin-bottom:5px}
+.grade{display:flex;flex-direction:column;gap:3px}
+.crit{font-size:13px}.crit.ok{color:var(--ink)}.crit .muted{font-size:12px}
+.raw{margin-top:7px}.raw>summary{cursor:pointer;color:var(--mut);font-size:12px}
+.raw pre{white-space:pre-wrap;word-break:break-word;background:#0f0d0b;border:1px solid var(--edge);
+border-radius:6px;padding:10px;font-size:12px;max-height:280px;overflow:auto;color:var(--mut)}
+.trend{margin:14px 0 4px}.tlabel{font-size:12px;color:var(--mut);margin-bottom:6px}
+.trow{display:flex;gap:9px;align-items:flex-end;height:58px;overflow-x:auto}
 .tcol{display:flex;flex-direction:column;align-items:center;gap:4px}
-.tcol i{width:22px;border-radius:3px 3px 0 0;display:block}.tcol i.ok{background:var(--ok)}
+.tcol i{width:20px;border-radius:3px 3px 0 0;display:block}.tcol i.ok{background:var(--ok)}
 .tcol i.bad{background:var(--bad)}.tcol span{font-size:10px;color:var(--mut)}
-footer{color:var(--mut);font-size:12px;padding:24px 32px 0}
-@media(prefers-color-scheme:light){:root{--bg:#faf7f2;--card:#fff;--ink:#2a2521;
---mut:#877c6d;--edge:#e7ddd0}}
+footer{color:var(--mut);font-size:12px;padding:26px 0 0}
+@media(prefers-color-scheme:light){:root{--bg:#faf7f2;--card:#fff;--card2:#f4efe7;
+--ink:#2a2521;--mut:#877c6d;--edge:#e7ddd0}.raw pre{background:#f4efe7}}
+@media(max-width:640px){.field{grid-template-columns:1fr;gap:4px}}
 """
 
 

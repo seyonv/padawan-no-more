@@ -135,11 +135,21 @@ def main():
                 bad = [f"{k}:{v['detail']}" for k, v in x["checks"].items() if not v["ok"]]
                 jr = "" if x["judge"]["pass"] else f" judge:{x['judge']['reason'][:110]}"
                 print(f"     rep{x['rep']} ✗ {'; '.join(bad)}{jr}")
+        cov = sc.get("covers") or {}
         scenario_rows.append({"name": sc["name"], "model": sc.get("model") or MODEL_DEFAULT,
                               "pass_rate": rate, "n_pass": n_pass, "n": len(reps),
-                              "flaky": flaky, "reps": reps})
+                              "flaky": flaky, "reps": reps,
+                              "input": {"situation": f"fixture: {sc.get('fixture')}",
+                                        "prompt": sc.get("prompt", "")},
+                              "expected_rubric": " ".join((sc.get("judge") or "").split()),
+                              "bucket": cov.get("bucket", ""), "why": cov.get("why", "").strip()})
     sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
                          text=True, cwd=ROOT).stdout.strip() or "nogit"
+    if a.only:
+        # a single-scenario debug run must not clobber the canonical full-run
+        # record or the report — just print and exit
+        all_green = all(s["pass_rate"] == 1.0 for s in scenario_rows)
+        sys.exit(0 if all_green else 1)
     os.makedirs(os.path.join(ROOT, "evals", "results"), exist_ok=True)
     json.dump({"sha": sha, "kind": "behavior", "repeat": a.repeat,
                "scenarios": scenario_rows},
@@ -150,14 +160,21 @@ def main():
                               update=True)
         for srow in scenario_rows:
             for x in srow["reps"]:
-                exp.log(input=f"{srow['name']}#rep{x['rep']}", output=x["stdout_tail"],
+                exp.log(input={"scenario": srow["name"], "prompt": srow["input"]["prompt"],
+                               "situation": srow["input"]["situation"]},
+                        expected=srow["expected_rubric"],
+                        output=x["stdout_tail"],
                         scores={"passed": 1 if x["passed"] else 0,
                                 "checks": x["checks_frac"],
                                 "judge": 1 if x["judge"]["pass"] else 0},
                         metadata={"scenario": srow["name"], "rep": x["rep"],
                                   "model": srow["model"], "sha": sha,
+                                  "bucket": srow["bucket"], "why": srow["why"],
                                   "pass_rate": srow["pass_rate"],
-                                  "judge_reason": x["judge"]["reason"]})
+                                  "judge_reason": x["judge"]["reason"],
+                                  "failing_checks": {k: v["detail"]
+                                                     for k, v in x["checks"].items()
+                                                     if not v["ok"]}})
         print(exp.summarize())
     try:
         import report
