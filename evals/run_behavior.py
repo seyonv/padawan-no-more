@@ -132,8 +132,10 @@ def main():
         n_pass = sum(1 for x in reps if x["passed"])
         rate = n_pass / len(reps)
         flaky = 0 < n_pass < len(reps)
+        blocking = sc.get("blocking", True)
         tag = "PASS" if rate == 1.0 else ("FLAKY" if flaky else "FAIL")
-        print(f"  {tag}  pass-rate {n_pass}/{len(reps)}")
+        note = "" if blocking else "  (non-blocking · informational)"
+        print(f"  {tag}  pass-rate {n_pass}/{len(reps)}{note}")
         for x in reps:
             if not x["passed"]:
                 bad = [f"{k}:{v['detail']}" for k, v in x["checks"].items() if not v["ok"]]
@@ -142,7 +144,7 @@ def main():
         cov = sc.get("covers") or {}
         scenario_rows.append({"name": sc["name"], "model": sc.get("model") or MODEL_DEFAULT,
                               "pass_rate": rate, "n_pass": n_pass, "n": len(reps),
-                              "flaky": flaky, "reps": reps,
+                              "flaky": flaky, "blocking": blocking, "reps": reps,
                               "input": {"situation": f"fixture: {sc.get('fixture')}",
                                         "prompt": sc.get("prompt", "")},
                               "expected_rubric": " ".join((sc.get("judge") or "").split()),
@@ -152,7 +154,7 @@ def main():
     if a.only:
         # a single-scenario debug run must not clobber the canonical full-run
         # record or the report — just print and exit
-        all_green = all(s["pass_rate"] == 1.0 for s in scenario_rows)
+        all_green = all(s["pass_rate"] == 1.0 for s in scenario_rows if s.get("blocking", True))
         sys.exit(0 if all_green else 1)
     os.makedirs(os.path.join(ROOT, "evals", "results"), exist_ok=True)
     json.dump({"sha": sha, "kind": "behavior", "repeat": a.repeat,
@@ -185,7 +187,7 @@ def main():
         print("report →", report.build())
     except Exception as e:  # report is a convenience, never fail the run on it
         print(f"(report skipped: {e})")
-    all_green = all(s["pass_rate"] == 1.0 for s in scenario_rows)
+    all_green = all(s["pass_rate"] == 1.0 for s in scenario_rows if s.get("blocking", True))
     sys.exit(0 if all_green else 1)
 
 

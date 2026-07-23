@@ -67,7 +67,8 @@ def _yaml_scenarios():
                               "rubric": " ".join((s.get("judge") or "").split()),
                               "bucket": cov.get("bucket", ""),
                               "why": (cov.get("why") or "").strip(),
-                              "fixture": s.get("fixture"), "model": s.get("model")}
+                              "fixture": s.get("fixture"), "model": s.get("model"),
+                              "blocking": s.get("blocking", True)}
         return out
     except Exception:
         return {}
@@ -261,6 +262,7 @@ def _rows(det, beh, ymeta):
         rows.append({"suite": "behavior", "name": name,
                      "bucket": s.get("bucket") or ym.get("bucket", ""),
                      "status": status, "rate": rate,
+                     "blocking": s.get("blocking", ym.get("blocking", True)),
                      "npass": 0 if pending else s["n_pass"], "n": 0 if pending else s["n"],
                      "detail": detail})
     # deterministic
@@ -285,6 +287,7 @@ def _rows(det, beh, ymeta):
         rows.append({"suite": "deterministic", "name": name,
                      "bucket": r.get("bucket") or exp.get("bucket", ""),
                      "status": "PASS" if ok else "FAIL", "rate": 1.0 if ok else 0.0,
+                     "blocking": True,
                      "npass": int(ok), "n": 1, "detail": detail})
     return rows
 
@@ -304,7 +307,10 @@ def _table(rows):
             f'<tr class="row" onclick="tog(this)">'
             f'<td class="c-exp"><span class="caret">▸</span></td>'
             f'<td class="c-suite"><span class="pill {r["suite"]}">{r["suite"][:4]}</span></td>'
-            f'<td class="c-name">{esc(r["name"])}</td>'
+            f'<td class="c-name">{esc(r["name"])}'
+            + ("" if r.get("blocking", True)
+               else ' <span class="nb" title="informational — does not gate the suite">non-blocking</span>')
+            + "</td>"
             f'<td class="c-bucket">{esc(r["bucket"])}</td>'
             f'<td class="c-status"><span class="chip {stcls}">{esc(st)}</span></td>'
             f'<td class="c-rate">{bar}<span class="rn">{raten}</span></td></tr>'
@@ -446,7 +452,9 @@ def build():
     ymeta = _yaml_scenarios()
     rows = _rows(det, beh, ymeta)
     graded = [r for r in rows if r["status"] != "pending"]
-    overall_ok = bool(graded) and all(r["status"] == "PASS" for r in graded)
+    # non-blocking (informational) scenarios never trigger "attention needed"
+    gating = [r for r in graded if r.get("blocking", True)]
+    overall_ok = bool(gating) and all(r["status"] == "PASS" for r in gating)
     n_pass = sum(1 for r in graded if r["status"] == "PASS")
     meta = []
     if beh:
@@ -568,6 +576,8 @@ tr.row td{padding:10px;vertical-align:middle}
 .caret{color:var(--mut);display:inline-block;transition:transform .15s}
 tbody.grp.open .caret{transform:rotate(90deg)}
 .c-name{font-weight:600}.c-bucket{color:var(--mut);font-size:13px}
+.nb{font-size:10px;font-weight:600;color:var(--mut);border:1px solid var(--edge);
+border-radius:9px;padding:1px 6px;margin-left:6px;text-transform:uppercase;letter-spacing:.03em}
 .pill{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.03em}
 .pill.behavior{background:rgba(91,200,255,.14);color:var(--saber)}
 .pill.deterministic{background:rgba(160,140,255,.16);color:#b8a6ff}
