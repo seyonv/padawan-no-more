@@ -29,7 +29,7 @@ def _parse_verdict(stdout):
     return None
 
 
-def judge(rubric, transcript, model=None):
+def judge_once(rubric, transcript, model=None):
     model = model or os.environ.get("EVAL_JUDGE_MODEL", "sonnet")
     prompt = (
         "You are grading an AI assistant's transcript against a rubric.\n"
@@ -44,5 +44,24 @@ def judge(rubric, transcript, model=None):
     v = _parse_verdict(r.stdout)
     if v is not None:
         return v
-    return {"pass": False,
-            "reason": f"judge output unparseable: {r.stdout[:200]!r} {r.stderr[:100]!r}"}
+    return {"pass": None,  # unparseable → don't let it count as a real "fail" vote
+            "reason": f"judge output unparseable: {r.stdout[:160]!r}"}
+
+
+def judge(rubric, transcript, model=None, votes=None):
+    """Ensemble judge: grade `votes` times and take the majority. An LLM judge is
+    itself non-deterministic, so a lone grumpy sample can flip a borderline-good
+    answer to fail — majority voting removes that as a flakiness source. Ties and
+    unparseable ballots are excluded from the count; default vote count comes from
+    EVAL_JUDGE_VOTES (falls back to 3)."""
+    votes = votes or int(os.environ.get("EVAL_JUDGE_VOTES", "3"))
+    ballots = [judge_once(rubric, transcript, model) for _ in range(votes)]
+    valid = [b for b in ballots if b["pass"] is not None]
+    if not valid:
+        return {"pass": False, "reason": ballots[0]["reason"], "votes": "0/0"}
+    n_pass = sum(1 for b in valid if b["pass"])
+    verdict = n_pass * 2 > len(valid)  # strict majority of parseable ballots
+    # surface a reason from a judge that agreed with the verdict
+    reason = next((b["reason"] for b in valid if b["pass"] == verdict), valid[0]["reason"])
+    return {"pass": verdict, "votes": f"{n_pass}/{len(valid)}",
+            "reason": f"[{n_pass}/{len(valid)} judges say pass] {reason}"}

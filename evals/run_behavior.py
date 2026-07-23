@@ -108,7 +108,11 @@ def main():
     ap.add_argument("--local", action="store_true")
     ap.add_argument("--repeat", type=int, default=3,
                     help="runs per scenario; pass-rate flags flaky (<100%%) scenarios")
+    ap.add_argument("--judge-votes", type=int,
+                    help="LLM-judge ballots per result (majority wins); default 3")
     a = ap.parse_args()
+    if a.judge_votes:
+        os.environ["EVAL_JUDGE_VOTES"] = str(a.judge_votes)
     if not os.path.isdir(FIXTURES) or not os.listdir(FIXTURES):
         subprocess.run([sys.executable,
                         os.path.join(ROOT, "evals/fixtures/generate.py"),
